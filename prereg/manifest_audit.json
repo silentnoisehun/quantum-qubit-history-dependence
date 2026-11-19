@@ -1,0 +1,1020 @@
+{
+  "timestamp_utc": "2026-11-19T17:07:09.820753+00:00",
+  "backend": "ibm_marrakesh",
+  "primary_qubit": 21,
+  "spectator_qubit": 20,
+  "optimization_level": 0,
+  "initial_layout": [
+    21,
+    20
+  ],
+  "total_circuits": 44,
+  "audit_passed": true,
+  "audit_errors": [],
+  "manifest_sha256": "6ab45905c27f654e4f6d42bbf4ae427193f1e9d1f5dad8811e1e55863dd9cd39",
+  "manifest": [
+    {
+      "index": 0,
+      "label": "D_tau_8ns_G_t0",
+      "arm": "D",
+      "tau_seconds": 8e-09,
+      "prep": "G",
+      "t_readout_seconds": 0.0,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 134,
+        "x": 64,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 64,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "5e38b4d3426ff5eb942fc7fc54fcb86634eab38b850182a6adef97e1288f134b"
+    },
+    {
+      "index": 1,
+      "label": "D_tau_8ns_G_tT",
+      "arm": "D",
+      "tau_seconds": 8e-09,
+      "prep": "G",
+      "t_readout_seconds": 0.000168,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 135,
+        "x": 64,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 64,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "d584e834608037b6394e7215c908bbb18f67adbd249770b2e9f8dd2eb662a273"
+    },
+    {
+      "index": 2,
+      "label": "D_tau_8ns_E_t0",
+      "arm": "D",
+      "tau_seconds": 8e-09,
+      "prep": "E",
+      "t_readout_seconds": 0.0,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 133,
+        "x": 65,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 65,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "32df8eb9cfe676fb21c24ffbbcc956ddafbdda76d8b4d69a68f90201168e4c92"
+    },
+    {
+      "index": 3,
+      "label": "D_tau_8ns_E_tT",
+      "arm": "D",
+      "tau_seconds": 8e-09,
+      "prep": "E",
+      "t_readout_seconds": 0.000168,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 134,
+        "x": 65,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 65,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "eb3c6b1de46a7eed8189b9efc7bc5429031d286a6cc8edefab8120ca08157990"
+    },
+    {
+      "index": 4,
+      "label": "D_tau_4000ns_G_t0",
+      "arm": "D",
+      "tau_seconds": 4e-06,
+      "prep": "G",
+      "t_readout_seconds": 0.0,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 134,
+        "x": 64,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 64,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "ee4a4c8bf718c074bfb0cc7a4866950f10941c5305b8e43f1ad015e22c44c07c"
+    },
+    {
+      "index": 5,
+      "label": "D_tau_4000ns_G_tT",
+      "arm": "D",
+      "tau_seconds": 4e-06,
+      "prep": "G",
+      "t_readout_seconds": 0.000168,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 135,
+        "x": 64,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 64,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "79aa7080dac94dfee83ab780d3c5096fda610c1728699448cd497f547b9b6ca0"
+    },
+    {
+      "index": 6,
+      "label": "D_tau_4000ns_E_t0",
+      "arm": "D",
+      "tau_seconds": 4e-06,
+      "prep": "E",
+      "t_readout_seconds": 0.0,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 133,
+        "x": 65,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 65,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "d7798ef0c9f9a20259ba590a36bc6e3638579f7208e5050cfd8353b8a02f5d19"
+    },
+    {
+      "index": 7,
+      "label": "D_tau_4000ns_E_tT",
+      "arm": "D",
+      "tau_seconds": 4e-06,
+      "prep": "E",
+      "t_readout_seconds": 0.000168,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 134,
+        "x": 65,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 65,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "dc97739e7c807895fa0425213f2369c57181fe5b6032b80f03aa79008220aacf"
+    },
+    {
+      "index": 8,
+      "label": "D_tau_16000ns_G_t0",
+      "arm": "D",
+      "tau_seconds": 1.6e-05,
+      "prep": "G",
+      "t_readout_seconds": 0.0,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 134,
+        "x": 64,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 64,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "01140a24619b0c84771aab940c470f6f905fc7d5908b6703921fd2d961744dd6"
+    },
+    {
+      "index": 9,
+      "label": "D_tau_16000ns_G_tT",
+      "arm": "D",
+      "tau_seconds": 1.6e-05,
+      "prep": "G",
+      "t_readout_seconds": 0.000168,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 135,
+        "x": 64,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 64,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "68fe5d3c956dcb7516ccc3bc59ca11f4d34420fa9b8c04529d638d44a4bdd5b2"
+    },
+    {
+      "index": 10,
+      "label": "D_tau_16000ns_E_t0",
+      "arm": "D",
+      "tau_seconds": 1.6e-05,
+      "prep": "E",
+      "t_readout_seconds": 0.0,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 133,
+        "x": 65,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 65,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "35d410fd6906330a1e3e13cfc17cc34b2dda2ed08651311ccd0882ef6842f3a9"
+    },
+    {
+      "index": 11,
+      "label": "D_tau_16000ns_E_tT",
+      "arm": "D",
+      "tau_seconds": 1.6e-05,
+      "prep": "E",
+      "t_readout_seconds": 0.000168,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 134,
+        "x": 65,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 65,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "02226a2f30c4dd2610fbaec67cf0a8645f9060aa328c632737099f12c06ab945"
+    },
+    {
+      "index": 12,
+      "label": "D_tau_64000ns_G_t0",
+      "arm": "D",
+      "tau_seconds": 6.4e-05,
+      "prep": "G",
+      "t_readout_seconds": 0.0,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 132,
+        "x": 64,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 64,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "432203c270798a20d528fd89c499703df139832b3a6d2a9ce43f7ab0267a9e6f"
+    },
+    {
+      "index": 13,
+      "label": "D_tau_64000ns_G_tT",
+      "arm": "D",
+      "tau_seconds": 6.4e-05,
+      "prep": "G",
+      "t_readout_seconds": 0.000168,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 133,
+        "x": 64,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 64,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "9e06d23917001b298b9aa5f69c343e9c140671a67f9489ea7e8f87a353bfacdc"
+    },
+    {
+      "index": 14,
+      "label": "D_tau_64000ns_E_t0",
+      "arm": "D",
+      "tau_seconds": 6.4e-05,
+      "prep": "E",
+      "t_readout_seconds": 0.0,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 131,
+        "x": 65,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 65,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "3b89d0ba60236b93da6b470e152de3526cab4520243b67ad828b5f40d5e3b650"
+    },
+    {
+      "index": 15,
+      "label": "D_tau_64000ns_E_tT",
+      "arm": "D",
+      "tau_seconds": 6.4e-05,
+      "prep": "E",
+      "t_readout_seconds": 0.000168,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 132,
+        "x": 65,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 65,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "042f809d467e2bb34686c062bc9a1aba3b2f02e7a0a720d63d52997fa065daaf"
+    },
+    {
+      "index": 16,
+      "label": "I_tau_8ns_G_t0",
+      "arm": "I",
+      "tau_seconds": 8e-09,
+      "prep": "G",
+      "t_readout_seconds": 0.0,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "delay": 7,
+        "barrier": 6,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 0,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "a9f99dbabff55739282984e89aedaab67f843c6e014aea5f40804afd085d8549"
+    },
+    {
+      "index": 17,
+      "label": "I_tau_8ns_G_tT",
+      "arm": "I",
+      "tau_seconds": 8e-09,
+      "prep": "G",
+      "t_readout_seconds": 0.000168,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "delay": 8,
+        "barrier": 6,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 0,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "c5dd76f1d1f7853b174594c86d8bfa885deb73dcf0a3d53955492566ad6e02cb"
+    },
+    {
+      "index": 18,
+      "label": "I_tau_8ns_E_t0",
+      "arm": "I",
+      "tau_seconds": 8e-09,
+      "prep": "E",
+      "t_readout_seconds": 0.0,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "delay": 6,
+        "barrier": 6,
+        "reset": 1,
+        "x": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 1,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "910066b1234c92f7c34ffba2694192e695035b8624c0a3b97394c615a620bd41"
+    },
+    {
+      "index": 19,
+      "label": "I_tau_8ns_E_tT",
+      "arm": "I",
+      "tau_seconds": 8e-09,
+      "prep": "E",
+      "t_readout_seconds": 0.000168,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "delay": 7,
+        "barrier": 6,
+        "reset": 1,
+        "x": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 1,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "40cd7f82dbe614d2891a1feb793ebe2227ac5de79a4e7d3d30b7e8588c6d32e0"
+    },
+    {
+      "index": 20,
+      "label": "I_tau_4000ns_G_t0",
+      "arm": "I",
+      "tau_seconds": 4e-06,
+      "prep": "G",
+      "t_readout_seconds": 0.0,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "delay": 7,
+        "barrier": 6,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 0,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "4047c6a62040734829dd8a583f3a3a667f8d45b0ac038df820866e444900896f"
+    },
+    {
+      "index": 21,
+      "label": "I_tau_4000ns_G_tT",
+      "arm": "I",
+      "tau_seconds": 4e-06,
+      "prep": "G",
+      "t_readout_seconds": 0.000168,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "delay": 8,
+        "barrier": 6,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 0,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "22331e5a2a9aba3b469e3a911ccb1b28574371d2a41eb172ccd80cfbd22e9b48"
+    },
+    {
+      "index": 22,
+      "label": "I_tau_4000ns_E_t0",
+      "arm": "I",
+      "tau_seconds": 4e-06,
+      "prep": "E",
+      "t_readout_seconds": 0.0,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "delay": 6,
+        "barrier": 6,
+        "reset": 1,
+        "x": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 1,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "acebd1423b42659dbd9e53ccd30e2778c8dc741cc02326e4ebe31e092f090a48"
+    },
+    {
+      "index": 23,
+      "label": "I_tau_4000ns_E_tT",
+      "arm": "I",
+      "tau_seconds": 4e-06,
+      "prep": "E",
+      "t_readout_seconds": 0.000168,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "delay": 7,
+        "barrier": 6,
+        "reset": 1,
+        "x": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 1,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "8033f98109eeac5010f0cc979e384901f717ac0abc42298cdf28ed21548bf9fe"
+    },
+    {
+      "index": 24,
+      "label": "I_tau_16000ns_G_t0",
+      "arm": "I",
+      "tau_seconds": 1.6e-05,
+      "prep": "G",
+      "t_readout_seconds": 0.0,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "delay": 7,
+        "barrier": 6,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 0,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "f459f51abbb9e7eeeb74d533fe723b7e10aa7dd07b77ab62eb4de50160848540"
+    },
+    {
+      "index": 25,
+      "label": "I_tau_16000ns_G_tT",
+      "arm": "I",
+      "tau_seconds": 1.6e-05,
+      "prep": "G",
+      "t_readout_seconds": 0.000168,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "delay": 8,
+        "barrier": 6,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 0,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "96298c7f98962e873ab691a10e7beb894096673eadb40753532fc748be8f2fac"
+    },
+    {
+      "index": 26,
+      "label": "I_tau_16000ns_E_t0",
+      "arm": "I",
+      "tau_seconds": 1.6e-05,
+      "prep": "E",
+      "t_readout_seconds": 0.0,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "delay": 6,
+        "barrier": 6,
+        "reset": 1,
+        "x": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 1,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "a3e1563ace97904004e2fa419e10f7c4fb5eca9d6ee3b317a8dba584e3300e71"
+    },
+    {
+      "index": 27,
+      "label": "I_tau_16000ns_E_tT",
+      "arm": "I",
+      "tau_seconds": 1.6e-05,
+      "prep": "E",
+      "t_readout_seconds": 0.000168,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "delay": 7,
+        "barrier": 6,
+        "reset": 1,
+        "x": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 1,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "7872d7ea940e3b3831b5da783182dcfdf78ec9f9693d2a2717cd2ca460594a4d"
+    },
+    {
+      "index": 28,
+      "label": "I_tau_64000ns_G_t0",
+      "arm": "I",
+      "tau_seconds": 6.4e-05,
+      "prep": "G",
+      "t_readout_seconds": 0.0,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 6,
+        "delay": 5,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 0,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "67ba07ea13e09ff5834f0879b467c2cf6f3c853e354f8c612ef7cb2bc6247a94"
+    },
+    {
+      "index": 29,
+      "label": "I_tau_64000ns_G_tT",
+      "arm": "I",
+      "tau_seconds": 6.4e-05,
+      "prep": "G",
+      "t_readout_seconds": 0.000168,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 6,
+        "delay": 6,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 0,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "3e72bcf180d0d74e81c401d26f244ad010e07a7174f38f7dfb339af1f27a9ff7"
+    },
+    {
+      "index": 30,
+      "label": "I_tau_64000ns_E_t0",
+      "arm": "I",
+      "tau_seconds": 6.4e-05,
+      "prep": "E",
+      "t_readout_seconds": 0.0,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 6,
+        "delay": 4,
+        "reset": 1,
+        "x": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 1,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "a1c8ff74f1415729c5d06d937b303d525d3655d9980fce25f40afb07a5f80165"
+    },
+    {
+      "index": 31,
+      "label": "I_tau_64000ns_E_tT",
+      "arm": "I",
+      "tau_seconds": 6.4e-05,
+      "prep": "E",
+      "t_readout_seconds": 0.000168,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 6,
+        "delay": 5,
+        "reset": 1,
+        "x": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 1,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "794daf1086c086fabfa1b45fc22f85b7524061662e518cfc66bd1aa1accf66a1"
+    },
+    {
+      "index": 32,
+      "label": "D_tau_8ns_G_t2T_modelcheck",
+      "arm": "D",
+      "tau_seconds": 8e-09,
+      "prep": "G",
+      "t_readout_seconds": 0.000336,
+      "is_model_check": true,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 135,
+        "x": 64,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 64,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "9e85139cae8fb3c8862a43d99373ed4c005b3ce904d2bff9aef6afbd1052996f"
+    },
+    {
+      "index": 33,
+      "label": "D_tau_8ns_E_t2T_modelcheck",
+      "arm": "D",
+      "tau_seconds": 8e-09,
+      "prep": "E",
+      "t_readout_seconds": 0.000336,
+      "is_model_check": true,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 134,
+        "x": 65,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 65,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "45862fdad2b3cb9b217703fad920a02264feac5e79af54adb6234ef640741060"
+    },
+    {
+      "index": 34,
+      "label": "I_tau_8ns_G_t2T_modelcheck",
+      "arm": "I",
+      "tau_seconds": 8e-09,
+      "prep": "G",
+      "t_readout_seconds": 0.000336,
+      "is_model_check": true,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "delay": 8,
+        "barrier": 6,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 0,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "022b2eb40e7e4405318be657daa7112d0b9cef8bb3630039f6e618c9c2760baf"
+    },
+    {
+      "index": 35,
+      "label": "I_tau_8ns_E_t2T_modelcheck",
+      "arm": "I",
+      "tau_seconds": 8e-09,
+      "prep": "E",
+      "t_readout_seconds": 0.000336,
+      "is_model_check": true,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "delay": 7,
+        "barrier": 6,
+        "reset": 1,
+        "x": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 1,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "2b2e381c4683677e2c01aa40c3f5f55c7d22d37127cba32d0b66d810b5311050"
+    },
+    {
+      "index": 36,
+      "label": "Nb_tau_8ns_G_t0",
+      "arm": "Nb",
+      "tau_seconds": 8e-09,
+      "prep": "G",
+      "t_readout_seconds": 0.0,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 134,
+        "x": 64,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 0,
+      "actual_x_spectator": 64,
+      "circuit_sha256": "e0775cd6e94f8535c79528d9c6028a9649a0e2d5c6002e7ac4ad61cfc9a95476"
+    },
+    {
+      "index": 37,
+      "label": "Nb_tau_8ns_G_tT",
+      "arm": "Nb",
+      "tau_seconds": 8e-09,
+      "prep": "G",
+      "t_readout_seconds": 0.000168,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 135,
+        "x": 64,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 0,
+      "actual_x_spectator": 64,
+      "circuit_sha256": "9ed219bd9f7cf1843d7b6b9119aab08fa90b0f661800138d7ca21959b1b0733c"
+    },
+    {
+      "index": 38,
+      "label": "Nb_tau_8ns_E_t0",
+      "arm": "Nb",
+      "tau_seconds": 8e-09,
+      "prep": "E",
+      "t_readout_seconds": 0.0,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 133,
+        "x": 65,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 1,
+      "actual_x_spectator": 64,
+      "circuit_sha256": "f2afe0e4040c537a32a45dac904095c8b19fe4e45b6ec54996d0358114b95041"
+    },
+    {
+      "index": 39,
+      "label": "Nb_tau_8ns_E_tT",
+      "arm": "Nb",
+      "tau_seconds": 8e-09,
+      "prep": "E",
+      "t_readout_seconds": 0.000168,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 262,
+        "delay": 134,
+        "x": 65,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 1,
+      "actual_x_spectator": 64,
+      "circuit_sha256": "9403d48b4b5b8690bf6af51ec23be8e701563695c50b0f823c16b33abfc47fa1"
+    },
+    {
+      "index": 40,
+      "label": "D_fast_tau_8ns_G_t0",
+      "arm": "D_fast",
+      "tau_seconds": 8e-09,
+      "prep": "G",
+      "t_readout_seconds": 0.0,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 134,
+        "x": 64,
+        "delay": 38,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 64,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "777444fa47f5f6e52412bfe898bbf27efbae2aed097d44f90f52b3c4139c5972"
+    },
+    {
+      "index": 41,
+      "label": "D_fast_tau_8ns_G_tT",
+      "arm": "D_fast",
+      "tau_seconds": 8e-09,
+      "prep": "G",
+      "t_readout_seconds": 0.000168,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 134,
+        "x": 64,
+        "delay": 39,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 64,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "d512561482e3a93a69fbc408e280cf1c13f740ad5e297ae77f665cede5848121"
+    },
+    {
+      "index": 42,
+      "label": "D_fast_tau_8ns_E_t0",
+      "arm": "D_fast",
+      "tau_seconds": 8e-09,
+      "prep": "E",
+      "t_readout_seconds": 0.0,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 134,
+        "x": 65,
+        "delay": 37,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 65,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "361356cc2c3432ffd5e38b9230c1480a00e79de386f31ed92bd0c0c332164b94"
+    },
+    {
+      "index": 43,
+      "label": "D_fast_tau_8ns_E_tT",
+      "arm": "D_fast",
+      "tau_seconds": 8e-09,
+      "prep": "E",
+      "t_readout_seconds": 0.000168,
+      "is_model_check": false,
+      "physical_qubits": [
+        21,
+        20
+      ],
+      "ops": {
+        "barrier": 134,
+        "x": 65,
+        "delay": 38,
+        "reset": 1,
+        "measure": 1
+      },
+      "actual_x_primary": 65,
+      "actual_x_spectator": 0,
+      "circuit_sha256": "5ed5539639836360b27944af0d744aa4a1c44fd89b45a5e5765cb90622a82b16"
+    }
+  ]
+}

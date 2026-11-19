@@ -1,0 +1,33 @@
+{
+  "frozen_timestamp_utc": "2026-11-19T17:08:50.627937+00:00",
+  "backend": "ibm_marrakesh",
+  "primary_qubit": 21,
+  "spectator_qubit": 20,
+  "files": {
+    "circuit_builder.py": {
+      "path": "src\\circuit_builder.py",
+      "sha256": "ff672b0d0ad0be9001d1f1608940565b7372a9fee9fb773e72dde8dce61bd8c6",
+      "size_bytes": 9013
+    },
+    "audit_transpiler.py": {
+      "path": "src\\audit_transpiler.py",
+      "sha256": "efb0d00c1f43e214db0dd73c87395b0d3cd0540573cd3dd4c36f91163a71c11b",
+      "size_bytes": 7080
+    },
+    "analysis.py": {
+      "path": "src\\analysis.py",
+      "sha256": "9213456b4379386fcb2c679d5d15a0ac9a50dfee50eace7feefe4e430f613a3f",
+      "size_bytes": 3775
+    },
+    "simulator.py": {
+      "path": "src\\simulator.py",
+      "sha256": "245ab550569389b1eef38035b19d519f270f47e46daa0402a2e4412f0a5a1033",
+      "size_bytes": 5893
+    },
+    "manifest_audit.json": {
+      "path": "prereg\\manifest_audit.json",
+      "sha256": "4a1b8b832623474c72b5d43f57e0633993169919c89908b99c48499ea292af19",
+      "size_bytes": 24876
+    }
+  }
+}
