@@ -159,7 +159,7 @@ def run_transpiler_audit(backend_name="ibm_marrakesh"):
         n_pulses=64,
         tau_max=64.0e-6,
         tau_0=8e-9,
-        t_decay=168.0e-6
+        t_decay=220.0e-6
     )
 
     builder = CircuitBuilder(q_primary=q_primary, q_spectator=q_spectator, timing=timing)

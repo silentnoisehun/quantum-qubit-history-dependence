@@ -60,10 +60,10 @@ A pilot mérés empirikus adatai alapján rögzített értékek:
 | Komponens | Elérési Út | SHA256 Hash |
 |---|---|---|
 | Áramkörépítő | `src/circuit_builder.py` | `47a5f5d7bc6aa2fafa1565bbd175ae8240e13d50f5889846131c4377a1c2be4c` |
-| Fordítási audit | `src/audit_transpiler.py` | `4b763497c35544eb35f29ad59c102d90b540278ee999609f3e712380bcb7a64b` |
+| Fordítási audit | `src/audit_transpiler.py` | `781699224880381adc2a297751869641d7c10f07c20d6c5ba8bc000e7cb28714` |
 | Statisztikai elemző | `src/analysis.py` | `35cab983c6b6d92652b77e776c7514d566c791e548765579b1306364a4fe7eb8` |
 | Validációs szimulátor | `src/simulator.py` | `3756d879b65e63793d8f19d7117e92aba3e9b8419cafc13c2dded05880da46c9` |
 | Fail-closed beküldő | `src/pilot_runner.py` | `dba786be82eeb7e69b86e37ca080c6c75ee6acac30d9b1755f7837de279824ab` |
 | Vakított pilot-elemző | `src/pilot_blind_analysis.py` | `7a96a40c1e0bff2ef707971e33fc19988e189fdf9977884c64881b7501f08033` |
-| Auditált manifest | `prereg/manifest_audit.json` | `dd01de597dc1fad33d9c419c7c357957f26f5146e001cb646e5e526d531d9809` |
+| Auditált manifest | `prereg/manifest_audit.json` | `3f3d9c7c0823fafabfb8bbba9c976d6ba5675bf2f7c1fc62293add7ecaa3741a` |
 | Jóslati táblázat | `prereg/PREDICTIONS.md` | `de189b54c6aed0bfff17b93cb28ce64638a2656349e72882a523322e90301c01` |
