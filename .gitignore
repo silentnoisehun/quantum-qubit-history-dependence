@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+.venv
+env/
+venv/
+ENV/
+*.token
+*apikey*.json
+*token*.json
+.pytest_cache/
+.coverage
+htmlcov/
+blind_key.json
+blind_mapping.json
