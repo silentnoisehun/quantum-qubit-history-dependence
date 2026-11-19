@@ -1,21 +1,20 @@
 #!/usr/bin/env python3
 """
-test_audit.py — Automated Unit & Fail-Closed Regression Tests
-Tests:
-1. Normal audit pass for all campaign and pilot circuits
-2. Fail-closed timing detection on +50 us perturbation
-3. Fail-closed gate detection on deleted X gate
+test_audit.py — Automated Unit & Fail-Closed Regression Tests (Offline with FakeMarrakesh)
 """
 
-import pytest
 import sys
 from pathlib import Path
+import pytest
+from qiskit import transpile
+from qiskit_ibm_runtime.fake_provider import FakeMarrakesh
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(REPO_ROOT / "src"))
 
 from circuit_builder import CircuitBuilder, TimingSpec
-from audit_transpiler import audit_single_circuit, get_backend
+from audit_transpiler import audit_single_circuit
+from pilot_blind_analysis import PilotBlindAnalyzer
 
 def test_circuit_builder_timing_concurrency():
     b = CircuitBuilder(21, 20)
@@ -25,9 +24,8 @@ def test_circuit_builder_timing_concurrency():
         assert qc.num_clbits == 1
 
 def test_timing_audit_catches_tau_corruption():
-    backend = get_backend("ibm_marrakesh")
+    backend = FakeMarrakesh()
     b = CircuitBuilder(21, 20)
-    from qiskit import transpile
     corrupt_qc = b.build_circuit("D", 8e-9 + 50e-6, "G", 0.0, "corrupt_tau")
     isa_qc = transpile(corrupt_qc, target=backend.target, initial_layout=[21, 20], optimization_level=0)
     res = audit_single_circuit(isa_qc, {"arm": "D", "prep": "G", "tau_seconds": 8e-9}, backend.target.durations(), 21, 20, 4e-9)
@@ -35,9 +33,8 @@ def test_timing_audit_catches_tau_corruption():
     assert "Conditioning-to-reset gap mismatch" in res["errors"][0]
 
 def test_audit_catches_deleted_x():
-    backend = get_backend("ibm_marrakesh")
+    backend = FakeMarrakesh()
     b = CircuitBuilder(21, 20)
-    from qiskit import transpile
     corrupt_qc = b.build_circuit("D", 8e-9, "G", 0.0, "corrupt_x")
     for i, inst in enumerate(corrupt_qc.data):
         if inst.operation.name == "x":
@@ -48,10 +45,20 @@ def test_audit_catches_deleted_x():
     assert len(res["errors"]) > 0
     assert "Primary X mismatch" in res["errors"][0]
 
+def test_blind_analyzer():
+    analyzer = PilotBlindAnalyzer()
+    mock_t = [i * 30e-6 for i in range(8)]
+    mock_p = [0.95 * np.exp(-t / 168e-6) + 0.02 for t in mock_t]
+    fit = analyzer.fit_t1(mock_t, mock_p)
+    assert 150.0 < fit["t1_empirical_us"] < 190.0
+
 if __name__ == "__main__":
+    import numpy as np
     test_circuit_builder_timing_concurrency()
     print("Circuit concurrency test: PASSED")
     test_timing_audit_catches_tau_corruption()
     print("Fail-closed timing corruption test: PASSED")
     test_audit_catches_deleted_x()
     print("Fail-closed X-deletion test: PASSED")
+    test_blind_analyzer()
+    print("Blind analyzer self-test: PASSED")

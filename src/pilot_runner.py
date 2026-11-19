@@ -173,14 +173,14 @@ def run_pilot(dry_run: bool = True):
 
     print(f"Submission record written to: {out_file}")
 
-    # Immediate git commit BEFORE downloading results
+    # Immediate git commit BEFORE downloading results (LOUD FAIL IF IT FAILS)
     try:
         subprocess.run(["git", "add", str(out_file)], cwd=str(REPO_ROOT), check=True)
         subprocess.run(["git", "commit", "-m", f"record(pilot): job submission {job_id} on {backend.name}"], cwd=str(REPO_ROOT), check=True)
         subprocess.run(["git", "push", "origin", "main"], cwd=str(REPO_ROOT), check=True)
         print("Git commit and push of submission metadata succeeded.")
     except Exception as e:
-        print(f"Warning: Git commit failed: {e}")
+        raise RuntimeError(f"CRITICAL: Failed to commit/push submission record to git: {e}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Pilot Job Submission")

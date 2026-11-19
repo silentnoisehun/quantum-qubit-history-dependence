@@ -18,6 +18,7 @@ FILES_TO_FREEZE = [
     SRC_DIR / "analysis.py",
     SRC_DIR / "simulator.py",
     SRC_DIR / "pilot_runner.py",
+    SRC_DIR / "pilot_blind_analysis.py",
     PREREG_DIR / "manifest_audit.json",
     PREREG_DIR / "PREDICTIONS.md",
 ]
