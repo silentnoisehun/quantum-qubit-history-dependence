@@ -5,6 +5,7 @@ test_audit.py — Automated Unit & Fail-Closed Regression Tests (Offline with Fa
 
 import sys
 from pathlib import Path
+import numpy as np
 import pytest
 from qiskit import transpile
 from qiskit_ibm_runtime.fake_provider import FakeMarrakesh
