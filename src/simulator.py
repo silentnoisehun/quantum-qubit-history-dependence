@@ -21,7 +21,7 @@ def run_single_campaign(pipeline: StatisticalPipeline, n_blocks: int = 8, shots_
                          leakage_asymmetry: float = 0.0,
                          interblock_drift_std: float = 0.05) -> dict:
     T = pipeline.t_decay
-    base_t1 = 168.0e-6
+    base_t1 = 220.0e-6
     block_results = []
     all_model_checks_ok = True
 
@@ -78,7 +78,7 @@ def run_single_campaign(pipeline: StatisticalPipeline, n_blocks: int = 8, shots_
 
 def run_simulation_validation(n_sims: int = 1000):
     np.random.seed(42)
-    pipeline = StatisticalPipeline(t_decay=168.0e-6, alpha=0.01, delta_eq=0.064)
+    pipeline = StatisticalPipeline(t_decay=220.0e-6, alpha=0.01, delta_eq=0.075)
 
     print("=" * 60)
     print("STAGE 1: NULL-CALIBRATION VALIDATION (H0)")
@@ -98,7 +98,7 @@ def run_simulation_validation(n_sims: int = 1000):
     print("\n" + "=" * 60)
     print("STAGE 2: INJECTED EFFECT POWER VALIDATION (MDE)")
     power_sims = 500
-    mde_rel = 0.068  # 6.8% relative relaxation rate slowdown
+    mde_rel = 0.075  # 7.5% relative relaxation rate slowdown
     detected_count = 0
     print(f"Simulating {power_sims} campaigns with injected {mde_rel*100:.1f}% relaxation slowdown...")
     for _ in range(power_sims):

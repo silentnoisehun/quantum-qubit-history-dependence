@@ -1,15 +1,17 @@
 {
   "backend": "ibm_marrakesh",
+  "blind_key_sha256": "7d7fe12284c746563e5d17d4f23e00d65bc95e74b075383624a0e5b6389ba2e6",
+  "calibrated_t1_seconds": 0.00021939,
   "files": {
     "PREDICTIONS.md": {
       "path": "prereg/PREDICTIONS.md",
-      "sha256": "8027e1c55b278b88bb22d22d33044c760a2f59eaeee59a6c87ed768a18a12101",
-      "size_bytes": 1730
+      "sha256": "de189b54c6aed0bfff17b93cb28ce64638a2656349e72882a523322e90301c01",
+      "size_bytes": 2188
     },
     "analysis.py": {
       "path": "src/analysis.py",
-      "sha256": "9213456b4379386fcb2c679d5d15a0ac9a50dfee50eace7feefe4e430f613a3f",
-      "size_bytes": 3775
+      "sha256": "35cab983c6b6d92652b77e776c7514d566c791e548765579b1306364a4fe7eb8",
+      "size_bytes": 4975
     },
     "audit_transpiler.py": {
       "path": "src/audit_transpiler.py",
@@ -18,12 +20,12 @@
     },
     "circuit_builder.py": {
       "path": "src/circuit_builder.py",
-      "sha256": "c458778b4bfad8396c69b0397db76f4c4dce8d56ce8675bb070f383cd0b01e12",
-      "size_bytes": 9864
+      "sha256": "47a5f5d7bc6aa2fafa1565bbd175ae8240e13d50f5889846131c4377a1c2be4c",
+      "size_bytes": 9881
     },
     "manifest_audit.json": {
       "path": "prereg/manifest_audit.json",
-      "sha256": "66076c14323ecf587a633eb8b1d85d7dfab2a92c6b07958a5f5e1492eda7f833",
+      "sha256": "dd01de597dc1fad33d9c419c7c357957f26f5146e001cb646e5e526d531d9809",
       "size_bytes": 22109
     },
     "pilot_blind_analysis.py": {
@@ -38,12 +40,13 @@
     },
     "simulator.py": {
       "path": "src/simulator.py",
-      "sha256": "0ebc12cc6b1000fb503a03dcbbc4d7b10d32e172141d5235dc8c7a588ef0e5f8",
+      "sha256": "3756d879b65e63793d8f19d7117e92aba3e9b8419cafc13c2dded05880da46c9",
       "size_bytes": 7062
     }
   },
-  "frozen_timestamp_utc": "2026-11-19T17:45:58.372571+00:00",
+  "frozen_timestamp_utc": "2026-11-19T18:48:51.345674+00:00",
   "primary_qubit": 21,
   "processor": "Heron r2",
+  "readout_delay_T_seconds": 0.00022,
   "spectator_qubit": 20
 }

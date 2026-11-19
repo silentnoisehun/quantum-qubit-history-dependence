@@ -46,6 +46,9 @@ def freeze_all():
         "processor": "Heron r2",
         "primary_qubit": 21,
         "spectator_qubit": 20,
+        "calibrated_t1_seconds": 219.39e-6,
+        "readout_delay_T_seconds": 220.0e-6,
+        "blind_key_sha256": "7d7fe12284c746563e5d17d4f23e00d65bc95e74b075383624a0e5b6389ba2e6",
         "files": records
     }
 

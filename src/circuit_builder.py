@@ -20,7 +20,7 @@ class TimingSpec:
     n_pulses: int = 64               # N = 64 X pulses
     tau_max: float = 64.0e-6         # 16000 dt = 64000 ns
     tau_0: float = 8e-9              # 2 dt min delay
-    t_decay: float = 168.0e-6        # T approx T1 = 168 us (42000 dt)
+    t_decay: float = 220.0e-6        # T calibrated from pilot T1 = 219.4 us (55000 dt)
 
 class CircuitBuilder:
     def __init__(self, q_primary: int = 21, q_spectator: int = 20, timing: TimingSpec = None):

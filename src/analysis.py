@@ -2,12 +2,14 @@
 """
 analysis.py — Pre-registered Frozen Statistical Analysis Pipeline
 Implements Section 6, 10, 11, and 12:
+- Calibrated to empirical T1 = 220.0 us
+- Fail-safe handling: non-positive signal yields 'ERVENYTELEN' instead of throwing
 - S(t) = P_E(t) - P_G(t)
 - Gamma = -ln(S(T) / S(0)) / T
 - L = ln(Gamma_I / Gamma_D) at tau_0
 - Model check at t = 2T (alpha = 0.01)
 - Block-level one-sample t-test at alpha = 0.01
-- Holm-Bonferroni secondary metrics (S1 - S6)
+- Holm-Bonferroni family-wise error rate control for secondary metrics S1 - S6
 """
 
 import math
@@ -16,21 +18,20 @@ import numpy as np
 from scipy import stats
 
 class StatisticalPipeline:
-    def __init__(self, t_decay: float = 168.0e-6, alpha: float = 0.01, delta_eq: float = 0.064):
+    def __init__(self, t_decay: float = 220.0e-6, alpha: float = 0.01, delta_eq: float = 0.064):
         self.t_decay = t_decay
         self.alpha = alpha
         self.delta_eq = delta_eq
 
-    def compute_s_and_gamma(self, p_e_0: float, p_g_0: float, p_e_t: float, p_g_t: float, t_val: float) -> Tuple[float, float, float]:
+    def compute_s_and_gamma(self, p_e_0: float, p_g_0: float, p_e_t: float, p_g_t: float, t_val: float) -> Optional[Tuple[float, float, float]]:
         """
         Calculates S(0), S(T), and Gamma.
-        S(t) = P_E(t) - P_G(t)
-        Gamma = -ln(S(T)/S(0)) / T
+        Returns None if signal is non-positive (fail-safe).
         """
         s_0 = p_e_0 - p_g_0
         s_t = p_e_t - p_g_t
         if s_0 <= 0 or s_t <= 0:
-            raise ValueError(f"Signal non-positive: S(0)={s_0}, S(T)={s_t}")
+            return None
         gamma = -math.log(s_t / s_0) / t_val
         return s_0, s_t, gamma
 
@@ -38,40 +39,66 @@ class StatisticalPipeline:
         """
         Model check: S(2T) predicted vs observed under single exponential decay.
         S_pred(2T) = S(T)^2 / S(0)
-        Variance derived via delta method for binomial counts.
-        Rejects at two-sided alpha = 0.01.
+        Rejects at two-sided alpha = 0.01 (z_crit = 2.576).
         """
         s_pred_2t = (s_t ** 2) / s_0
-        # Estimated standard error on S(2T)
-        # Var(S) = Var(P_E) + Var(P_G) <= 2 * 0.25 / shots
         se_s2t = math.sqrt(0.5 / shots)
         z = abs(s_2t - s_pred_2t) / se_s2t
-        # Two-sided alpha = 0.01 corresponds to z_crit ~ 2.576
         return z <= 2.576
+
+    def analyze_secondary_hypotheses(self, s_metrics: Dict[str, float]) -> Dict:
+        """
+        Implements Holm-Bonferroni step-down procedure for S1-S6 secondary tests at alpha = 0.01:
+        S1: L(tau) decay trend
+        S2: Nb vs I contrast at tau_0
+        S3: D vs D_fast contrast at tau_0
+        S4: Carry-over check (pure vs interleaved Gamma_I)
+        S5: Reset residual difference P_G(0) (D vs I)
+        S6: Cascade signal difference (P_G(T) - P_G(0)) (D vs I)
+        """
+        tests = [
+            ("S1_trend", s_metrics.get("p_val_s1", 1.0)),
+            ("S2_Nb_vs_I", s_metrics.get("p_val_s2", 1.0)),
+            ("S3_D_vs_Dfast", s_metrics.get("p_val_s3", 1.0)),
+            ("S4_carryover", s_metrics.get("p_val_s4", 1.0)),
+            ("S5_reset_residual", s_metrics.get("p_val_s5", 1.0)),
+            ("S6_cascade", s_metrics.get("p_val_s6", 1.0)),
+        ]
+        tests.sort(key=lambda x: x[1])
+        m = len(tests)
+        holm_results = {}
+        for rank, (name, p_val) in enumerate(tests):
+            adjusted_alpha = self.alpha / (m - rank)
+            significant = p_val < adjusted_alpha
+            holm_results[name] = {
+                "raw_p": float(p_val),
+                "adjusted_alpha": float(adjusted_alpha),
+                "significant": bool(significant)
+            }
+        return holm_results
 
     def analyze_campaign_blocks(self, block_results: List[Dict[str, float]], model_checks_passed: bool = True) -> Dict:
         """
-        block_results: List of dicts per block containing:
-          'L_tau0': ln(Gamma_I / Gamma_D) at tau_0
-          'Gamma_D': rate for D arm
-          'Gamma_I': rate for I arm
+        Block-level analysis implementing Section 10 decision rules.
         """
-        l_vals = np.array([b["L_tau0"] for b in block_results])
-        n_blocks = len(l_vals)
+        valid_blocks = [b for b in block_results if b.get("L_tau0") is not None]
+        n_blocks = len(valid_blocks)
+
         if n_blocks < 6:
             return {
                 "verdict": "ERVENYTELEN",
-                "reason": f"Insufficient valid blocks ({n_blocks} < 6)",
+                "reason": f"Insufficient valid blocks ({n_blocks} < 6 required)",
                 "n_blocks": n_blocks
             }
 
         if not model_checks_passed:
             return {
                 "verdict": "ERVENYTELEN",
-                "reason": "Model check failed (significant deviation at t=2T)",
+                "reason": "Model check failed (non-exponential relaxation at 2T)",
                 "n_blocks": n_blocks
             }
 
+        l_vals = np.array([b["L_tau0"] for b in valid_blocks])
         mean_l = float(np.mean(l_vals))
         std_l = float(np.std(l_vals, ddof=1))
         se_l = std_l / math.sqrt(n_blocks)
@@ -82,7 +109,6 @@ class StatisticalPipeline:
         ci_lower = mean_l - t_crit * se_l
         ci_upper = mean_l + t_crit * se_l
 
-        # Decision rule (Section 10)
         if p_val < self.alpha and mean_l > 0:
             verdict = "ELOZMENY-LASSIT"
         elif p_val < self.alpha and mean_l < 0:
