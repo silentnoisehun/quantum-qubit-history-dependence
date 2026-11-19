@@ -1,0 +1,25 @@
+{
+  "analysis_type": "PILOT_BLINDED_CHARACTERIZATION",
+  "blinding_status": "ENFORCED (L sign and magnitude completely suppressed)",
+  "pooled_metrics": {
+    "mean_baseline_PG0": 0.0013,
+    "mean_initial_contrast_S0": 0.9891,
+    "pooled_sample_std": 0.39072155618106746,
+    "single_circuit_theoretical_se": 0.022360679774997897
+  },
+  "recommended_thresholds_for_confirmatory": {
+    "max_baseline_PG0_gate": 0.08,
+    "min_contrast_S0_gate": 0.8,
+    "recommended_blocks": 8,
+    "shots_per_circuit": 2500
+  },
+  "t1_fit": {
+    "amplitude_A": 0.8566579941888322,
+    "baseline_B": 0.13708303048809714,
+    "r_squared": 0.9992962491471874,
+    "t1_empirical_seconds": 0.00021939265054914228,
+    "t1_empirical_us": 219.39265054914227,
+    "t1_stderr_seconds": 9.321918967576285e-06
+  },
+  "timestamp_utc": "2026-11-19T18:13:59.149262+00:00"
+}
