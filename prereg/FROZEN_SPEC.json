@@ -1,33 +1,44 @@
 {
-  "frozen_timestamp_utc": "2026-11-19T17:08:50.627937+00:00",
   "backend": "ibm_marrakesh",
-  "primary_qubit": 21,
-  "spectator_qubit": 20,
   "files": {
-    "circuit_builder.py": {
-      "path": "src\\circuit_builder.py",
-      "sha256": "ff672b0d0ad0be9001d1f1608940565b7372a9fee9fb773e72dde8dce61bd8c6",
-      "size_bytes": 9013
-    },
-    "audit_transpiler.py": {
-      "path": "src\\audit_transpiler.py",
-      "sha256": "efb0d00c1f43e214db0dd73c87395b0d3cd0540573cd3dd4c36f91163a71c11b",
-      "size_bytes": 7080
+    "PREDICTIONS.md": {
+      "path": "prereg/PREDICTIONS.md",
+      "sha256": "8027e1c55b278b88bb22d22d33044c760a2f59eaeee59a6c87ed768a18a12101",
+      "size_bytes": 1730
     },
     "analysis.py": {
-      "path": "src\\analysis.py",
+      "path": "src/analysis.py",
       "sha256": "9213456b4379386fcb2c679d5d15a0ac9a50dfee50eace7feefe4e430f613a3f",
       "size_bytes": 3775
     },
-    "simulator.py": {
-      "path": "src\\simulator.py",
-      "sha256": "245ab550569389b1eef38035b19d519f270f47e46daa0402a2e4412f0a5a1033",
-      "size_bytes": 5893
+    "audit_transpiler.py": {
+      "path": "src/audit_transpiler.py",
+      "sha256": "4b763497c35544eb35f29ad59c102d90b540278ee999609f3e712380bcb7a64b",
+      "size_bytes": 11432
+    },
+    "circuit_builder.py": {
+      "path": "src/circuit_builder.py",
+      "sha256": "c458778b4bfad8396c69b0397db76f4c4dce8d56ce8675bb070f383cd0b01e12",
+      "size_bytes": 9864
     },
     "manifest_audit.json": {
-      "path": "prereg\\manifest_audit.json",
-      "sha256": "4a1b8b832623474c72b5d43f57e0633993169919c89908b99c48499ea292af19",
-      "size_bytes": 24876
+      "path": "prereg/manifest_audit.json",
+      "sha256": "66076c14323ecf587a633eb8b1d85d7dfab2a92c6b07958a5f5e1492eda7f833",
+      "size_bytes": 22109
+    },
+    "pilot_runner.py": {
+      "path": "src/pilot_runner.py",
+      "sha256": "80ede45d0f99ef0f537965d0d94d0ed1afef3cd016926b2f4e508e15e04c4a92",
+      "size_bytes": 7698
+    },
+    "simulator.py": {
+      "path": "src/simulator.py",
+      "sha256": "0ebc12cc6b1000fb503a03dcbbc4d7b10d32e172141d5235dc8c7a588ef0e5f8",
+      "size_bytes": 7062
     }
-  }
+  },
+  "frozen_timestamp_utc": "2026-11-19T17:30:01.076977+00:00",
+  "primary_qubit": 21,
+  "processor": "Heron r2",
+  "spectator_qubit": 20
 }

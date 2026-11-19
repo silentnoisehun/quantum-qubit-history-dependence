@@ -2,10 +2,10 @@
 """
 circuit_builder.py — Strict fail-closed circuit builder for Qubit History Dependence.
 Constructs D, I, Nb, and D_fast circuits with exact timing matching:
-- Total pre-reset duration: tau_max + T_c
-- Barriers around every conditioning gate
+- Total pre-reset duration: tau_max + T_c (strictly identical across all arms)
+- Slot-matched concurrent execution for primary and spectator qubits
+- Barriers around every conditioning gate (single-qubit barriers to prevent serialization)
 - Explicit initial layout
-- Zero pulse-level dependencies (gate-level compatible with Qiskit 2.x)
 """
 
 from dataclasses import dataclass
@@ -40,74 +40,82 @@ class CircuitBuilder:
         cr = ClassicalRegister(1, "c")
         qc = QuantumCircuit(qr, cr, name=label)
 
-        # Qubit 0: primary (mapped to q_primary)
-        # Qubit 1: spectator (mapped to q_spectator)
         q_idx = 0
         qp_idx = 1
 
-        # 1. Padding wait: tau_max - tau
+        # 1. Padding wait: tau_max - tau (concurrent on both qubits)
         pad_time = self.timing.tau_max - tau
         if pad_time > 1e-12:
             qc.delay(pad_time, qr[q_idx], unit="s")
             qc.delay(pad_time, qr[qp_idx], unit="s")
         qc.barrier(qr)
 
-        # 2. Conditioning block (duration T_c)
+        # 2. Conditioning block (duration T_c) - STRICTLY CONCURRENT ON BOTH QUBITS
         if arm == "D":
-            # N = 64 X pulses evenly spaced
-            # Slot = 252 ns (63 dt): delay(108 ns) -> X(36 ns) -> delay(108 ns)
+            # 64 slots of 252 ns each
+            # Primary: delay(108 ns) -> X(36 ns) -> delay(108 ns)
+            # Spectator: delay(252 ns) concurrent in each slot
             slot_delay = (self.timing.t_c - self.timing.n_pulses * self.timing.t_x) / self.timing.n_pulses
             half_delay = slot_delay / 2.0
+            slot_total = self.timing.t_x + slot_delay
             for _ in range(self.timing.n_pulses):
-                qc.barrier(qr)
+                qc.barrier([qr[q_idx]])
                 qc.delay(half_delay, qr[q_idx], unit="s")
-                qc.barrier(qr)
+                qc.barrier([qr[q_idx]])
                 qc.x(qr[q_idx])
-                qc.barrier(qr)
+                qc.barrier([qr[q_idx]])
                 qc.delay(half_delay, qr[q_idx], unit="s")
-                qc.barrier(qr)
-            # spectator idle
-            qc.delay(self.timing.t_c, qr[qp_idx], unit="s")
+                qc.barrier([qr[q_idx]])
+                # Concurrent slot delay on spectator
+                qc.delay(slot_total, qr[qp_idx], unit="s")
 
         elif arm == "I":
-            # Primary and spectator idle for T_c
+            # Primary and spectator both idle for T_c concurrently
             qc.delay(self.timing.t_c, qr[q_idx], unit="s")
             qc.delay(self.timing.t_c, qr[qp_idx], unit="s")
 
         elif arm == "Nb":
-            # Primary idle, spectator receives N = 64 pulses
+            # 64 slots of 252 ns each
+            # Spectator: delay(108 ns) -> X(36 ns) -> delay(108 ns)
+            # Primary: delay(252 ns) concurrent in each slot
             slot_delay = (self.timing.t_c - self.timing.n_pulses * self.timing.t_x) / self.timing.n_pulses
             half_delay = slot_delay / 2.0
+            slot_total = self.timing.t_x + slot_delay
             for _ in range(self.timing.n_pulses):
-                qc.barrier(qr)
+                qc.barrier([qr[qp_idx]])
                 qc.delay(half_delay, qr[qp_idx], unit="s")
-                qc.barrier(qr)
+                qc.barrier([qr[qp_idx]])
                 qc.x(qr[qp_idx])
-                qc.barrier(qr)
+                qc.barrier([qr[qp_idx]])
                 qc.delay(half_delay, qr[qp_idx], unit="s")
-                qc.barrier(qr)
-            qc.delay(self.timing.t_c, qr[q_idx], unit="s")
+                qc.barrier([qr[qp_idx]])
+                # Concurrent slot delay on primary
+                qc.delay(slot_total, qr[q_idx], unit="s")
 
         elif arm == "D_fast":
-            # N/2 = 32 X-X pairs evenly spaced
-            # Remaining delay = 16128 ns - 2304 ns = 13824 ns / 32 = 432 ns per slot
+            # 32 slots of 504 ns each
+            # Primary: X(36 ns) -> X(36 ns) -> delay(432 ns)
+            # Spectator: delay(504 ns) concurrent in each slot
             n_pairs = self.timing.n_pulses // 2
             pair_delay = (self.timing.t_c - self.timing.n_pulses * self.timing.t_x) / n_pairs
+            slot_total = 2 * self.timing.t_x + pair_delay
             for _ in range(n_pairs):
-                qc.barrier(qr)
+                qc.barrier([qr[q_idx]])
                 qc.x(qr[q_idx])
-                qc.barrier(qr)
+                qc.barrier([qr[q_idx]])
                 qc.x(qr[q_idx])
-                qc.barrier(qr)
+                qc.barrier([qr[q_idx]])
                 qc.delay(pair_delay, qr[q_idx], unit="s")
-                qc.barrier(qr)
-            qc.delay(self.timing.t_c, qr[qp_idx], unit="s")
+                qc.barrier([qr[q_idx]])
+                # Concurrent slot delay on spectator
+                qc.delay(slot_total, qr[qp_idx], unit="s")
         else:
             raise ValueError(f"Unknown conditioning arm: {arm}")
 
+        # Block boundary synchronization
         qc.barrier(qr)
 
-        # 3. Post-conditioning delay: tau
+        # 3. Post-conditioning delay: tau (concurrent on both qubits)
         if tau > 1e-12:
             qc.delay(tau, qr[q_idx], unit="s")
             qc.delay(tau, qr[qp_idx], unit="s")
@@ -205,7 +213,15 @@ class CircuitBuilder:
                 qc.delay(t_val, qr[0], unit="s")
             qc.barrier(qr)
             qc.measure(qr[0], cr[0])
-            meta = {"type": "t1_calibration", "t_readout_seconds": t_val, "point": idx}
+            meta = {
+                "arm": "T1_CALIBRATION",
+                "tau_seconds": 0.0,
+                "prep": "E",
+                "t_readout_seconds": t_val,
+                "is_model_check": False,
+                "type": "t1_calibration",
+                "point": idx
+            }
             pilot_circuits.append((label, qc, meta))
         return pilot_circuits
 
@@ -215,4 +231,3 @@ if __name__ == "__main__":
     t1_curve = builder.generate_pilot_t1_curve()
     print(f"Total campaign circuits generated: {len(suite)}")
     print(f"Total pilot T1 calibration circuits: {len(t1_curve)}")
-    print(f"Sample circuit operations count: {suite[0][1].count_ops()}")
