@@ -1,0 +1,70 @@
+{
+  "session_id": 7,
+  "job_id": "dc1duqts2omc738ag750",
+  "retrieved_at_utc": "2026-11-22T12:26:23.873760+00:00",
+  "hardware_usage": {
+    "raw_usage": "8"
+  },
+  "counts": {
+    "I_tau_8ns_G_t2T_mc": {
+      "ones": 5,
+      "zeros": 995,
+      "shots": 1000
+    },
+    "I_tau_8ns_E_t0": {
+      "ones": 495,
+      "zeros": 5,
+      "shots": 500
+    },
+    "D_tau_8ns_E_t2T_mc": {
+      "ones": 245,
+      "zeros": 755,
+      "shots": 1000
+    },
+    "I_tau_8ns_E_tT": {
+      "ones": 679,
+      "zeros": 821,
+      "shots": 1500
+    },
+    "D_tau_8ns_E_t0": {
+      "ones": 495,
+      "zeros": 5,
+      "shots": 500
+    },
+    "I_tau_8ns_G_tT": {
+      "ones": 2,
+      "zeros": 498,
+      "shots": 500
+    },
+    "D_tau_8ns_E_tT": {
+      "ones": 682,
+      "zeros": 818,
+      "shots": 1500
+    },
+    "I_tau_8ns_E_t2T_mc": {
+      "ones": 214,
+      "zeros": 786,
+      "shots": 1000
+    },
+    "D_tau_8ns_G_tT": {
+      "ones": 1,
+      "zeros": 499,
+      "shots": 500
+    },
+    "D_tau_8ns_G_t2T_mc": {
+      "ones": 3,
+      "zeros": 997,
+      "shots": 1000
+    },
+    "I_tau_8ns_G_t0": {
+      "ones": 0,
+      "zeros": 500,
+      "shots": 500
+    },
+    "D_tau_8ns_G_t0": {
+      "ones": 4,
+      "zeros": 496,
+      "shots": 500
+    }
+  }
+}
