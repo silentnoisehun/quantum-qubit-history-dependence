@@ -1,0 +1,62 @@
+================================================================================
+L-MÉRÉS v3: SZIMULÁTOROS ÉS STATISZTIKAI ELLENŐRZŐ TESZTNAPLÓ
+Pre-regisztrált protokoll: 16 alkalom, 10 000 lövés/blokk, df=15, 99% CI
+Monte Carlo ismétlésszám forgatókönyvenként: n = 500 kampány
+================================================================================
+
+[TESZT 1 / 6] CASE 1: L = 0.00 (Instinct Markov referencia)
+Feltétel: sigma_session = 0.03, rho = 0.0, leakage = 0.0
+  • Átlagos L pontbecslés: -0.0008 ± 0.0148
+  • Átlagos 99%-os CI sávszélesség: ±0.0425
+  • Döntési megoszlás 500 szimulált kampányból:
+    - OSSZEEGYEZTETHETO 0-VAL, NEM +0.08-CAL: 489 / 500 (97.8%)
+    - NEM DONTO: 6 / 500 (1.2%)
+    - EGYIK PONTJOSLATTAL SEM EGYEZTETHETO OSSZE: 5 / 500 (1.0%)
+  • Téves +0.08 detektálás (álpozitív arány): 0.00% (Cél: < 0.5%)
+
+[TESZT 2 / 6] CASE 2: L = +0.08 (Máté elméleti jóslata)
+Feltétel: sigma_session = 0.03, rho = 0.0, leakage = 0.0
+  • Átlagos L pontbecslés: +0.0804 ± 0.0148
+  • Döntési megoszlás 500 szimulált kampányból:
+    - OSSZEEGYEZTETHETO +0.08-CAL, NEM 0-VAL: 492 / 500 (98.4%)
+    - NEM DONTO: 5 / 500 (1.0%)
+    - EGYIK PONTJOSLATTAL SEM EGYEZTETHETO OSSZE: 3 / 500 (0.6%)
+  • Helyes +0.08 azonosítási erő (statisztikai erő): 98.4%
+
+[TESZT 3 / 6] CASE 3: Köztes érték (L = +0.04)
+Feltétel: sigma_session = 0.03, rho = 0.0
+  • Döntési megoszlás 500 szimulált kampányból:
+    - OSSZEEGYEZTETHETO +0.08-CAL, NEM 0-VAL: 181 / 500 (36.2%)
+    - OSSZEEGYEZTETHETO 0-VAL, NEM +0.08-CAL: 163 / 500 (32.6%)
+    - NEM DONTO: 108 / 500 (21.6%)
+    - EGYIK PONTJOSLATTAL SEM EGYEZTETHETO OSSZE: 48 / 500 (9.6%)
+
+[TESZT 4 / 6] CASE 4: Szivárgási modell (|2> kaszkád populáció, P2 = 0.01)
+Feltétel: L = 0.00, de aszimmetrikus szivárgás van a D karban
+  • Látszólagos átlagos L eltolódás: +0.0041 (szivárgási műtermék)
+  • D2 Bonferroni modellellenőrzés érzékenysége (eltérés jelzésének aránya): 0.6%
+  • Döntési megoszlás szivárgás mellett:
+    - OSSZEEGYEZTETHETO 0-VAL, NEM +0.08-CAL: 486 / 500 (97.2%)
+    - NEM DONTO: 12 / 500 (2.4%)
+    - EGYIK PONTJOSLATTAL SEM EGYEZTETHETO OSSZE: 2 / 500 (0.4%)
+
+[TESZT 5 / 6] CASE 5: Időbeli függés (AR(1) drift a 16 alkalom között, rho = 0.50)
+Feltétel: L = 0.00, sigma_session = 0.035, rho = 0.50
+  • 99%-os konfidenciaintervallum valós lefedése erős időközti autokorreláció mellett: 96.4% (Névleges: 99.0%)
+  • Döntési megoszlás autokorreláció mellett:
+    - OSSZEEGYEZTETHETO 0-VAL, NEM +0.08-CAL: 460 / 500 (92.0%)
+    - NEM DONTO: 22 / 500 (4.4%)
+    - EGYIK PONTJOSLATTAL SEM EGYEZTETHETO OSSZE: 15 / 500 (3.0%)
+    - OSSZEEGYEZTETHETO +0.08-CAL, NEM 0-VAL: 3 / 500 (0.6%)
+
+[TESZT 6 / 6] CASE 6: Matematikai határesetek és hibás logaritmustartomány
+Feltétel: 1 session-ben extrém zaj miatt nem definiálható kontraszt (sT <= 0 vagy gamma <= 0)
+  • Elemzési kimenet: 'NEM ERTEKELHETO (UNDEFINED RATES)'
+  • Rendszerindoklás: 1 session(s) produced undefined rates. Data cannot be silently omitted.
+  • Rögzített hiba a naplóban: [{'session_id': 3, 'error': 'Arm D rate undefined: Non-positive contrast: s0=0.9800, sT=-0.0013'}]
+  • Csendes adatkihagyás történt-e? NEM (Fail-Closed, helyes)
+
+================================================================================
+SZIMULÁCIÓS AUDIT ÖSSZEGZÉS:
+Minden teszt sikeresen és a pre-regisztrált feltételek szerint lefutott.
+================================================================================
