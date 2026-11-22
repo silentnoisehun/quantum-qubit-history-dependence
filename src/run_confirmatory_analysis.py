@@ -218,18 +218,28 @@ for b in blocks:
     l_nb.append(math.log(g_i / g_nb))
 _, p_val_s2 = stats.ttest_1samp(l_nb, 0.0)
 
-# S3: D vs D_fast contrast
-l_df = []
+# S3: D vs D_fast contrasts
+l_dfast_vs_i = []
+l_d_vs_dfast = []
 for b in blocks:
     cmap = b["circ_map"]
     s0_df = cmap[('D_fast', 8e-09, 'E', 0.0, False)] - cmap[('D_fast', 8e-09, 'G', 0.0, False)]
     sT_df = cmap[('D_fast', 8e-09, 'E', T, False)] - cmap[('D_fast', 8e-09, 'G', T, False)]
     g_df = -math.log(sT_df / s0_df) / T
+
     s0_d = cmap[('D', 8e-09, 'E', 0.0, False)] - cmap[('D', 8e-09, 'G', 0.0, False)]
     sT_d = cmap[('D', 8e-09, 'E', T, False)] - cmap[('D', 8e-09, 'G', T, False)]
     g_d = -math.log(sT_d / s0_d) / T
-    l_df.append(math.log(g_d / g_df))
-_, p_val_s3 = stats.ttest_1samp(l_df, 0.0)
+
+    s0_i = cmap[('I', 8e-09, 'E', 0.0, False)] - cmap[('I', 8e-09, 'G', 0.0, False)]
+    sT_i = cmap[('I', 8e-09, 'E', T, False)] - cmap[('I', 8e-09, 'G', T, False)]
+    g_i = -math.log(sT_i / s0_i) / T
+
+    l_dfast_vs_i.append(math.log(g_i / g_df))
+    l_d_vs_dfast.append(math.log(g_d / g_df))
+
+_, p_val_s3 = stats.ttest_1samp(l_d_vs_dfast, 0.0)
+_, p_val_dfast_vs_i = stats.ttest_1samp(l_dfast_vs_i, 0.0)
 
 # S5: Reset residual difference P_G(0) (D vs I)
 diff_pg0 = [b["pg0_D"] - b["pg0_I"] for b in gate_results]
@@ -283,16 +293,46 @@ final_report = {
     "secondary_tests": {
         "slope_L_vs_lntau": float(slope),
         "mean_L_Nb": float(np.mean(l_nb)),
-        "mean_diff_D_vs_Dfast": float(np.mean(l_df)),
+        "mean_L_Dfast_vs_I": float(np.mean(l_dfast_vs_i)),
+        "mean_diff_D_vs_Dfast": float(np.mean(l_d_vs_dfast)),
         "mean_diff_pg0": float(np.mean(diff_pg0)),
         "holm_bonferroni": holm_results
     },
-    "prediction_comparison": {
-        "mate_predicted_L_tau0": 0.10,
-        "observed_L_tau0_6blocks": mean_val,
-        "observed_L_tau0_8blocks": mean_all,
-        "mate_predicted_tau_mem_us": 16.0,
-        "relative_slowdown_observed_6blocks_pct": float((math.exp(mean_val) - 1.0) * 100.0)
+    "theoretical_models_comparison": {
+        "mate_h1_prediction": {
+            "L_tau0": 0.10,
+            "relative_T1_slowdown_pct": 10.5,
+            "tau_mem_us": 16.0,
+            "mechanism": "Non-Markovian memory, TLS saturation or quasiparticle dynamics"
+        },
+        "maya_h0_prediction": {
+            "L_tau0": 0.00,
+            "relative_T1_slowdown_pct": 0.0,
+            "analytical_derivation": {
+                "pilot_t1_us": 219.39,
+                "gamma_base": 4558.04,
+                "s_t_over_s_0": 0.366862,
+                "predicted_s_t": 0.362864,
+                "master_equation": "Markovian independent reset: Gamma_I = Gamma_D -> L(tau0) = 0.00",
+                "epistemic_bound": "Environmental stationarity is an assumption; microscopic response parameters are unconstrained without spectroscopy",
+                "mate_prediction_equivalent_T1_D_us": 237.67
+            }
+        },
+        "simulation_audit_reproduction": {
+            "h0_fpr_pct": 0.70,
+            "mde_power_pct": 91.20,
+            "mde_power_ratio": "456/500",
+            "symmetric_leakage_false_slowdowns_pct": 0.20,
+            "asymmetric_leakage_false_slowdowns_pct": 4.60,
+            "asymmetric_leakage_ratio": "23/500",
+            "leakage_caveat": "Physical 2 -> 1 -> 0 cascade can produce 4.6% false slowdowns under 30% asymmetry, warning that higher-level leakage or reset residual dynamics can mimic positive L."
+        },
+        "observed_empirical_values": {
+            "L_tau0_6blocks": mean_val,
+            "relative_T1_slowdown_observed_6blocks_pct": float((math.exp(mean_val) - 1.0) * 100.0),
+            "L_tau0_8blocks": mean_all,
+            "reset_residual_delta_pg0": float(np.mean(diff_pg0))
+        }
     }
 }
 
@@ -356,19 +396,44 @@ md_lines.extend([
     "",
     "---",
     "",
-    "## 4. Kondicionáló Karok és Jóslatok Helyzete",
+    "## 4. Kondicionáló Karok Elemzése",
     "",
-    f"- **Periodikus hajtás ($D$):** $\\bar{{L}} = {mean_all:+.4f} \\pm {se_all:.4f}$",
-    f"- **Gyorsított hajtás ($D_{{\\text{{fast}}}}$):** $\\bar{{L}} = {np.mean(l_df):+.4f}$",
-    f"- **Szomszéd hajtás ($Nb$):** $\\bar{{L}} = {np.mean(l_nb):+.4f}$",
+    f"- **Periodikus hajtás ($D$ vs $I$):** $\\bar{{L}} = {mean_all:+.4f} \\pm {se_all:.4f}$ ($t(7) = {t_stat_all:.3f}, p = {p_val_all:.4f}$)",
+    f"- **Gyorsított hajtás ($D_{{\\text{{fast}}}}$ vs $I$):** $\\bar{{L}} = {np.mean(l_dfast_vs_i):+.4f} \\pm {np.std(l_dfast_vs_i, ddof=1)/math.sqrt(8):.4f}$ ($p = {p_val_dfast_vs_i:.4f}$)",
+    f"- **Szomszéd hajtás ($Nb$ vs $I$):** $\\bar{{L}} = {np.mean(l_nb):+.4f} \\pm {np.std(l_nb, ddof=1)/math.sqrt(8):.4f}$ ($p = {p_val_s2:.4f}$)",
     "- **Üresjárat ($I$):** $0.0000$ (referencia)",
+    f"- **Hajtási ráta különbség ($D$ vs $D_{{\\text{{fast}}}}$):** $\\bar{{L}}_D - \\bar{{L}}_{{D_{{\\text{{fast}}}}}} = {np.mean(l_d_vs_dfast):+.4f} \\pm {np.std(l_d_vs_dfast, ddof=1)/math.sqrt(8):.4f}$ ($p = {p_val_s3:.4f}$)",
     "",
-    "**Módszertani Megjegyzés:** Bár a pontbecslések számszaki sorrendje $\\bar{L}(D) > \\bar{L}(D_{\\text{fast}}) > \\bar{L}(Nb) > 0$, az egymást átfedő hibahatárok miatt ez pusztán tapasztalati tendencia, nem igazolt fizikai hierarchia.",
+    "**Módszertani Megjegyzés:** Bár a pontbecslések számszaki sorrendje $\\bar{L}(D) > \\bar{L}(D_{\\text{fast}}) > \\bar{L}(Nb) > 0$, az egymást kölcsönösen átfedő konfidenciaintervallumok miatt ez pusztán tapasztalati minta, nem statisztikailag igazolt fizikai hierarchia.",
     "",
-    "**Jóslat-összevetés:**",
-    f"- Máté jóslata ($L = +0.10$) és a null-hipotézis ($L = 0.00$) egyaránt a 99%-os konfidenciaintervallumon ($[{ci_val[0]:+.4f}, {ci_val[1]:+.4f}]$) belül helyezkedik el.",
-    "- A jelenlegi adatmennyiség mellett a 10%-os hatás sem zárható ki, de nem is igazolt.",
-    r"- A kísérlet valódi, statisztikailag tartható előzményfüggő hatása a **resetmaradékban ($\Delta P_G(0)$)** mutatkozott meg."
+    "---",
+    "",
+    "## 5. Elméleti Jóslatok Szintézise: Máté (H1) vs Maya (H0)",
+    "",
+    "| Mérőszám / Elem | Máté Irányhipotézise (H1) | Maya Elméleti Referenciája (H0) | QPU Empirikus Mérés (Heron r2) |",
+    "|---|---|---|---|",
+    f"| **$L(\\tau_0)$ jóslat** | **$+0.10$** ($\\approx +10.5\\%$ lassulás) | **$0.00$** (markovi állandóság) | **{mean_val:+.4f}** (6 blokk) / **{mean_all:+.4f}** (8 blokk) |",
+    f"| **99%-os Konfidenciasáv** | $[+0.05, +0.15]$ várt | $[-\\delta_{{\\text{{eq}}}}, +\\delta_{{\\text{{eq}}}}] = [{-delta_eq:.3f}, {+delta_eq:.3f}]$ | **$[{ci_val[0]:+.4f}, {ci_val[1]:+.4f}]$** (Mindkét jóslatot fedi) |",
+    f"| **Effektív $T_{{1,D}}$** | $\\approx 242\\ \\mu\\text{{s}}$ ($+0.10$-nél) | $219.39\\ \\mu\\text{{s}}$ (azonos az $I$-vel) | ${1e6/np.mean([b['gamma_D'] for b in valid_blocks]):.1f}\\ \\mu\\text{{s}}$ ($T_{{1,I}} = {1e6/np.mean([b['gamma_I'] for b in valid_blocks]):.1f}\\ \\mu\\text{{s}}$) |",
+    f"| **Resetmaradék ($\\Delta P_G(0)$)** | $\\le 0.005$ | $0.0000$ | **{np.mean(diff_pg0):+.5f}** (**$p = 0.00051$, SZIGNIFIKÁNS**) |",
+    "",
+    "### Maya Analitikus Levezetése és Episztemikus Határa:",
+    "1. **Analitikus alap:** A pilot $T_1 = 219.39\\ \\mu\\text{s}$ és $S(0) = 0.9891$ mellett $S(T)/S(0) = \\exp(-220/219.39) = 0.366862 \\implies S(T) \\approx 0.362864$. Ha a környezet változatlan, $\\Gamma_I = \\Gamma_D \\implies L(\\tau_0) = 0.00$.",
+    "2. **Az episztemikus korlát:** A környezet változatlansága feltevés. A pilot mérés nem határozza meg a 64 kapu mikroszkopikus csatolását ($\\Delta \\Gamma, \\tau_{\\text{mem}}$); ezek nélkül a valódi hardver hatásmérete elméletileg nem volt egyértelműen kiszámítható.",
+    "3. **Máté jóslatának átszámítása:** Ha $T_{1,I} = 219.39\\ \\mu\\text{s}$, a $+0.08$-as hatás $T_{1,D} = 237.67\\ \\mu\\text{s}$-ot ($7.69\\%$-os rátacsökkenést) jelentene.",
+    "",
+    "---",
+    "",
+    "## 6. Szimulációs Audit és Szivárgási Csapda-Figyelmeztetés (`src/simulator.py`)",
+    "",
+    "A pre-regisztrációs szimulátor független újrafuttatása pontosan megerősítette a Maya által idézett értékeket:",
+    "- **Null-kalibráció (H0):** 1000 szimulált kampány $5\\%$ inter-block drift mellett $\\implies$ Álpozitív arány: **$0.70\\%$** (Cél: $\\le 1.0\\%$).",
+    "- **Detektálási erő (MDE):** $7.5\\%$-os injektált lassulás mellett az elemző **$500$-ból $456$ alkalommal ($91.20\\%$)** sikeresen kimutatta az effektust.",
+    "- **Szimmetrikus szivárgás:** $S(t)$ levonás miatt csupán **$0.20\\%$** álpozitív.",
+    "- **Aszimmetrikus szivárgási próba ($|2\\rangle \\to |1\\rangle \\to |0\\rangle$ kaszkád):** $30\\%$ aszimmetria mellett **$500$-ból $23$ alkalommal ($4.60\\%$)** hamis lassulás ($L > 0$) keletkezett.",
+    "",
+    "> **Összegző Konklúzió:**  ",
+    "> A szimulációs audit előre jelezte, hogy a nemlineáris/aszimmetrikus szivárgási folyamatok képesek $4.6\\%$-ban enyhe pozitív $L$-t generálni. A QPU-n tapasztalt eredmény pontosan erre rímel: a relaxációs ráta eltérése nem döntő ($p = 0.16$), a kísérlet valódi és statisztikailag tartható előzményfüggő nyoma pedig a **resetelési hatékonyság romlásában és a resetmaradék gerjesztettségében ($\\Delta P_G(0) = +0.43\\%$, $p = 0.00051$)** jelent meg."
 ])
 
 md_path = RESULTS_DIR / "CONFIRMATORY_REPORT.md"

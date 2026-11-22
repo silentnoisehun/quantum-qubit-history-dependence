@@ -1,5 +1,5 @@
 # Qubit-Előzményfüggés Konfirmatív Mérési Jelentés (Revízió v1.1)
-**Dátum (UTC):** 2026-11-22T08:23:20.232505+00:00  
+**Dátum (UTC):** 2026-11-22T08:38:32.911385+00:00  
 **Backend:** `ibm_marrakesh` (Heron r2, 156-qubit QPU)  
 **Qubitpár:** Elsődleges $q=21$, Szomszéd $q'=20$  
 **Hivatalos Döntési Kategória:** **`NEM DONTO`**  
@@ -50,16 +50,41 @@ Miközben a relaxációs ráta eltérése nem érte el a szignifikanciát, a pre
 
 ---
 
-## 4. Kondicionáló Karok és Jóslatok Helyzete
+## 4. Kondicionáló Karok Elemzése
 
-- **Periodikus hajtás ($D$):** $\bar{L} = +0.0220 \pm 0.0193$
-- **Gyorsított hajtás ($D_{\text{fast}}$):** $\bar{L} = -0.0046$
-- **Szomszéd hajtás ($Nb$):** $\bar{L} = +0.0091$
+- **Periodikus hajtás ($D$ vs $I$):** $\bar{L} = +0.0220 \pm 0.0193$ ($t(7) = 1.141, p = 0.2915$)
+- **Gyorsított hajtás ($D_{\text{fast}}$ vs $I$):** $\bar{L} = +0.0174 \pm 0.0137$ ($p = 0.2456$)
+- **Szomszéd hajtás ($Nb$ vs $I$):** $\bar{L} = +0.0091 \pm 0.0142$ ($p = 0.5391$)
 - **Üresjárat ($I$):** $0.0000$ (referencia)
+- **Hajtási ráta különbség ($D$ vs $D_{\text{fast}}$):** $\bar{L}_D - \bar{L}_{D_{\text{fast}}} = -0.0046 \pm 0.0257$ ($p = 0.8640$)
 
-**Módszertani Megjegyzés:** Bár a pontbecslések számszaki sorrendje $\bar{L}(D) > \bar{L}(D_{\text{fast}}) > \bar{L}(Nb) > 0$, az egymást átfedő hibahatárok miatt ez pusztán tapasztalati tendencia, nem igazolt fizikai hierarchia.
+**Módszertani Megjegyzés:** Bár a pontbecslések számszaki sorrendje $\bar{L}(D) > \bar{L}(D_{\text{fast}}) > \bar{L}(Nb) > 0$, az egymást kölcsönösen átfedő konfidenciaintervallumok miatt ez pusztán tapasztalati minta, nem statisztikailag igazolt fizikai hierarchia.
 
-**Jóslat-összevetés:**
-- Máté jóslata ($L = +0.10$) és a null-hipotézis ($L = 0.00$) egyaránt a 99%-os konfidenciaintervallumon ($[-0.0508, +0.1228]$) belül helyezkedik el.
-- A jelenlegi adatmennyiség mellett a 10%-os hatás sem zárható ki, de nem is igazolt.
-- A kísérlet valódi, statisztikailag tartható előzményfüggő hatása a **resetmaradékban ($\Delta P_G(0)$)** mutatkozott meg.
+---
+
+## 5. Elméleti Jóslatok Szintézise: Máté (H1) vs Maya (H0)
+
+| Mérőszám / Elem | Máté Irányhipotézise (H1) | Maya Elméleti Referenciája (H0) | QPU Empirikus Mérés (Heron r2) |
+|---|---|---|---|
+| **$L(\tau_0)$ jóslat** | **$+0.10$** ($\approx +10.5\%$ lassulás) | **$0.00$** (markovi állandóság) | **+0.0360** (6 blokk) / **+0.0220** (8 blokk) |
+| **99%-os Konfidenciasáv** | $[+0.05, +0.15]$ várt | $[-\delta_{\text{eq}}, +\delta_{\text{eq}}] = [-0.075, 0.075]$ | **$[-0.0508, +0.1228]$** (Mindkét jóslatot fedi) |
+| **Effektív $T_{1,D}$** | $\approx 242\ \mu\text{s}$ ($+0.10$-nél) | $219.39\ \mu\text{s}$ (azonos az $I$-vel) | $181.3\ \mu\text{s}$ ($T_{1,I} = 175.1\ \mu\text{s}$) |
+| **Resetmaradék ($\Delta P_G(0)$)** | $\le 0.005$ | $0.0000$ | **+0.00425** (**$p = 0.00051$, SZIGNIFIKÁNS**) |
+
+### Maya Analitikus Levezetése és Episztemikus Határa:
+1. **Analitikus alap:** A pilot $T_1 = 219.39\ \mu\text{s}$ és $S(0) = 0.9891$ mellett $S(T)/S(0) = \exp(-220/219.39) = 0.366862 \implies S(T) \approx 0.362864$. Ha a környezet változatlan, $\Gamma_I = \Gamma_D \implies L(\tau_0) = 0.00$.
+2. **Az episztemikus korlát:** A környezet változatlansága feltevés. A pilot mérés nem határozza meg a 64 kapu mikroszkopikus csatolását ($\Delta \Gamma, \tau_{\text{mem}}$); ezek nélkül a valódi hardver hatásmérete elméletileg nem volt egyértelműen kiszámítható.
+3. **Máté jóslatának átszámítása:** Ha $T_{1,I} = 219.39\ \mu\text{s}$, a $+0.08$-as hatás $T_{1,D} = 237.67\ \mu\text{s}$-ot ($7.69\%$-os rátacsökkenést) jelentene.
+
+---
+
+## 6. Szimulációs Audit és Szivárgási Csapda-Figyelmeztetés (`src/simulator.py`)
+
+A pre-regisztrációs szimulátor független újrafuttatása pontosan megerősítette a Maya által idézett értékeket:
+- **Null-kalibráció (H0):** 1000 szimulált kampány $5\%$ inter-block drift mellett $\implies$ Álpozitív arány: **$0.70\%$** (Cél: $\le 1.0\%$).
+- **Detektálási erő (MDE):** $7.5\%$-os injektált lassulás mellett az elemző **$500$-ból $456$ alkalommal ($91.20\%$)** sikeresen kimutatta az effektust.
+- **Szimmetrikus szivárgás:** $S(t)$ levonás miatt csupán **$0.20\%$** álpozitív.
+- **Aszimmetrikus szivárgási próba ($|2\rangle \to |1\rangle \to |0\rangle$ kaszkád):** $30\%$ aszimmetria mellett **$500$-ból $23$ alkalommal ($4.60\%$)** hamis lassulás ($L > 0$) keletkezett.
+
+> **Összegző Konklúzió:**  
+> A szimulációs audit előre jelezte, hogy a nemlineáris/aszimmetrikus szivárgási folyamatok képesek $4.6\%$-ban enyhe pozitív $L$-t generálni. A QPU-n tapasztalt eredmény pontosan erre rímel: a relaxációs ráta eltérése nem döntő ($p = 0.16$), a kísérlet valódi és statisztikailag tartható előzményfüggő nyoma pedig a **resetelési hatékonyság romlásában és a resetmaradék gerjesztettségében ($\Delta P_G(0) = +0.43\%$, $p = 0.00051$)** jelent meg.

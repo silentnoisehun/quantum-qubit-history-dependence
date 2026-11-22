@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-11-22T08:23:20.232091+00:00",
+  "timestamp_utc": "2026-11-22T08:38:32.910920+00:00",
   "backend": "ibm_marrakesh",
   "processor": "Heron r2",
   "primary_qubit": 21,
@@ -263,6 +263,7 @@
   "secondary_tests": {
     "slope_L_vs_lntau": -0.0003527154001382601,
     "mean_L_Nb": 0.009146112202043775,
+    "mean_L_Dfast_vs_I": 0.017404504874023136,
     "mean_diff_D_vs_Dfast": -0.00457285814036381,
     "mean_diff_pg0": 0.00425,
     "holm_bonferroni": {
@@ -288,11 +289,40 @@
       }
     }
   },
-  "prediction_comparison": {
-    "mate_predicted_L_tau0": 0.1,
-    "observed_L_tau0_6blocks": 0.03600110191722618,
-    "observed_L_tau0_8blocks": 0.021977363014386932,
-    "mate_predicted_tau_mem_us": 16.0,
-    "relative_slowdown_observed_6blocks_pct": 3.6656988800487955
+  "theoretical_models_comparison": {
+    "mate_h1_prediction": {
+      "L_tau0": 0.1,
+      "relative_T1_slowdown_pct": 10.5,
+      "tau_mem_us": 16.0,
+      "mechanism": "Non-Markovian memory, TLS saturation or quasiparticle dynamics"
+    },
+    "maya_h0_prediction": {
+      "L_tau0": 0.0,
+      "relative_T1_slowdown_pct": 0.0,
+      "analytical_derivation": {
+        "pilot_t1_us": 219.39,
+        "gamma_base": 4558.04,
+        "s_t_over_s_0": 0.366862,
+        "predicted_s_t": 0.362864,
+        "master_equation": "Markovian independent reset: Gamma_I = Gamma_D -> L(tau0) = 0.00",
+        "epistemic_bound": "Environmental stationarity is an assumption; microscopic response parameters are unconstrained without spectroscopy",
+        "mate_prediction_equivalent_T1_D_us": 237.67
+      }
+    },
+    "simulation_audit_reproduction": {
+      "h0_fpr_pct": 0.7,
+      "mde_power_pct": 91.2,
+      "mde_power_ratio": "456/500",
+      "symmetric_leakage_false_slowdowns_pct": 0.2,
+      "asymmetric_leakage_false_slowdowns_pct": 4.6,
+      "asymmetric_leakage_ratio": "23/500",
+      "leakage_caveat": "Physical 2 -> 1 -> 0 cascade can produce 4.6% false slowdowns under 30% asymmetry, warning that higher-level leakage or reset residual dynamics can mimic positive L."
+    },
+    "observed_empirical_values": {
+      "L_tau0_6blocks": 0.03600110191722618,
+      "relative_T1_slowdown_observed_6blocks_pct": 3.6656988800487955,
+      "L_tau0_8blocks": 0.021977363014386932,
+      "reset_residual_delta_pg0": 0.00425
+    }
   }
 }
