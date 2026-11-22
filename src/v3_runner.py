@@ -363,60 +363,28 @@ def reconcile_submission_intent(
     session_id: int,
     intent_file: Path,
     meta_file: Path,
-    service,
-    backend_name: str
-) -> Optional[Dict[str, Any]]:
+    service=None,
+    backend_name: Optional[str] = None
+) -> None:
     """
-    Recovers from a program crash occurring after sampler.run() but before meta was written.
-    Never submits a duplicate job.
+    Halts execution safely if an intent file exists without a corresponding meta file.
+    Does NOT automatically attach any remote job based on timestamp heuristics.
+    Does NOT resubmit to prevent duplicate runs.
+    Requires manual verification and resolution.
     """
     with open(intent_file, encoding="utf-8") as f:
         intent = json.load(f)
-    intent_dt = datetime.fromisoformat(intent["intent_created_at_utc"])
-    print(f"FIGYELEM: Session {session_id} szándékfájl létezik meta nélkül! Lehetséges megszakadás.")
-    print("Egyeztetés az IBM joblistájával duplicate beküldés elkerülésére...")
+    intent_dt_str = intent.get("intent_created_at_utc", "unknown")
+    print(f"FIGYELEM: Session {session_id} szándékfájl létezik meta nélkül ({intent_file})!")
+    print(f"Szándék rögzítve: {intent_dt_str}")
+    print("Megszakadt beküldés gyanúja. A téves job-hozzárendelés és duplicate beküldés elkerülésére a futtató leáll.")
 
-    try:
-        # Search recent jobs on backend
-        jobs = service.jobs(limit=10, backend_name=backend_name)
-        candidates = []
-        for j in jobs:
-            created = getattr(j, "creation_date", None)
-            if created:
-                diff_sec = abs((created - intent_dt).total_seconds())
-                if diff_sec < 600:  # within 10 minutes of declared intent
-                    candidates.append((j, diff_sec))
-
-        if len(candidates) == 1:
-            recovered_job, diff = candidates[0]
-            recovered_id = recovered_job.job_id()
-            print(f"Sikeres helyreállítás! Megtalált job ID: {recovered_id} (eltérés: {diff:.1f}s)")
-            meta_record = {
-                "session_id": session_id,
-                "job_id": recovered_id,
-                "submitted_at_utc": intent["intent_created_at_utc"],
-                "backend": backend_name,
-                "session_info": intent["session_info"],
-                "circuits_catalog": intent["circuits_catalog"],
-                "shots": intent["shots"],
-                "status": "RECOVERED_FROM_INTENT"
-            }
-            with open(meta_file, "w", encoding="utf-8") as f:
-                json.dump(meta_record, f, indent=2)
-            intent["status"] = "RECOVERED"
-            with open(intent_file, "w", encoding="utf-8") as f:
-                json.dump(intent, f, indent=2)
-            return meta_record
-        else:
-            raise RuntimeError(
-                f"UNRECONCILED INTENT: Session {session_id} szándékfájl létezik, de {len(candidates)} egyező job található! "
-                f"Duplicate beküldés megakadályozva. Kézi ellenőrzés szükséges."
-            )
-    except Exception as e:
-        raise RuntimeError(
-            f"Kritikus beküldési bizonytalanság: szándékfájl van, de a job egyeztetés sikertelen: {e}. "
-            "A runner leáll, nem indít új jobot."
-        )
+    raise RuntimeError(
+        f"KÉZI EGYEZTETÉS SZÜKSÉGES: Session {session_id} szándékfájl létezik ({intent_file}), "
+        f"de nincs elmentett jobazonosító ({meta_file} hiányzik). "
+        f"A program nem rendel hozzá automatikusan jobot pusztán időpont alapján, és nem küldi újra. "
+        f"Kérlek egyeztesd kézzel az IBM Quantum felületével!"
+    )
 
 def submit_session(
     session_id: int,

@@ -356,18 +356,25 @@ class TestV3RunnerMock(unittest.TestCase):
         self.assertTrue((TEST_DATA_DIR / "v3_l_measurement_report.json").exists())
 
     # -------------------------------------------------------------------------
-    # 10. Crash Recovery: Unreconciled Intent Halts Without Re-Submission
+    # 10. Crash Recovery: Intent Without Meta Halts for Manual Reconciliation
     # -------------------------------------------------------------------------
-    def test_10_unreconciled_intent_halts_without_resubmission(self):
+    def test_10_intent_without_meta_halts_for_manual_reconciliation(self):
         mock_service = self.get_mock_service()
         mock_backend = self.get_mock_backend()
-        mock_service.jobs.return_value = []  # No jobs found on remote backend
+        
+        # Even if a job exists on remote backend around that timestamp,
+        # runner must NOT automatically assign it!
+        mock_job = MagicMock()
+        mock_job.job_id.return_value = "suspicious_candidate_job"
+        now_utc = datetime.now(timezone.utc)
+        mock_job.creation_date = now_utc + timedelta(seconds=1)
+        mock_service.jobs.return_value = [mock_job]
 
         # Simulate crash: intent exists, meta does not
         intent_path = TEST_DATA_DIR / "session_00_intent.json"
         with open(intent_path, "w", encoding="utf-8") as f:
             json.dump({
-                "session_id": 0, "intent_created_at_utc": datetime.now(timezone.utc).isoformat(),
+                "session_id": 0, "intent_created_at_utc": now_utc.isoformat(),
                 "status": "INTENT_DECLARED"
             }, f)
 
@@ -383,50 +390,48 @@ class TestV3RunnerMock(unittest.TestCase):
                     service=mock_service,
                     backend=mock_backend
                 )
-            self.assertIn("UNRECONCILED INTENT", str(ctx.exception))
+            self.assertIn("KÉZI EGYEZTETÉS SZÜKSÉGES", str(ctx.exception))
+            # Critical: must NOT auto-create meta file
+            self.assertFalse((TEST_DATA_DIR / "session_00_meta.json").exists())
             # Critical: must NOT have called sampler.run again
             mock_sampler.run.assert_not_called()
 
     # -------------------------------------------------------------------------
-    # 11. Crash Recovery: Reconciled Intent Recovers Job ID
+    # 11. Crash Recovery: Manual Resolution Allows Safe Fetch Without Re-run
     # -------------------------------------------------------------------------
-    def test_11_reconciled_intent_recovers_job(self):
+    def test_11_manual_resolution_prevents_duplicate_submission(self):
         mock_service = self.get_mock_service()
         mock_backend = self.get_mock_backend()
 
         now_utc = datetime.now(timezone.utc)
-        intent_path = TEST_DATA_DIR / "session_00_intent.json"
-        with open(intent_path, "w", encoding="utf-8") as f:
+        # Operator manually verified IBM console and created meta file
+        meta_path = TEST_DATA_DIR / "session_00_meta.json"
+        with open(meta_path, "w", encoding="utf-8") as f:
             json.dump({
-                "session_id": 0, "intent_created_at_utc": now_utc.isoformat(),
-                "session_info": {"circuit_execution_order": []},
-                "circuits_catalog": {}, "shots": 10000,
-                "status": "INTENT_DECLARED"
+                "session_id": 0, "job_id": "manually_verified_job_123",
+                "submitted_at_utc": now_utc.isoformat(),
+                "status": "SUBMITTED"
             }, f)
 
-        # Mock remote job that was successfully submitted right before the crash
-        mock_job = MagicMock()
-        mock_job.job_id.return_value = "recovered_job_id_xyz"
-        mock_job.creation_date = now_utc + timedelta(seconds=2)
-        mock_service.jobs.return_value = [mock_job]
+        mock_remote_job = MagicMock()
+        mock_remote_job.status.return_value = "RUNNING"
+        mock_service.job.return_value = mock_remote_job
 
         with patch("v3_runner.SamplerV2") as mock_sampler_cls:
             mock_sampler = MagicMock()
             mock_sampler_cls.return_value = mock_sampler
 
-            reconciled = v3_runner.submit_session(
+            res = v3_runner.submit_session(
                 session_id=0,
                 approval_token=self.test_token,
                 enforce_schedule=False,
                 service=mock_service,
                 backend=mock_backend
             )
-            self.assertEqual(reconciled["job_id"], "recovered_job_id_xyz")
-            self.assertEqual(reconciled["status"], "RECOVERED_FROM_INTENT")
             # Must NOT call sampler.run again
             mock_sampler.run.assert_not_called()
-            # Meta file now exists
-            self.assertTrue((TEST_DATA_DIR / "session_00_meta.json").exists())
+            # Must have fetched from existing job
+            mock_service.job.assert_called_with("manually_verified_job_123")
 
     # -------------------------------------------------------------------------
     # 12. Instance Mismatch Halts Fail-Closed
