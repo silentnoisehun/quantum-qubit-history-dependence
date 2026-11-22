@@ -18,7 +18,7 @@ from typing import Dict, Any, List
 from v3_circuit_builder import CircuitBuilderV3, TimingSpecV3
 
 def generate_frozen_manifest(
-    start_utc_iso: str = "2026-11-22T11:00:00Z",
+    start_utc_iso: str = "2026-11-22T10:00:00Z",
     created_at_utc: str = "2026-11-22T10:00:00Z",
     interval_minutes: int = 10,
     min_interval_minutes: int = 10,

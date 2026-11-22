@@ -250,20 +250,28 @@ class TestV3RunnerMock(unittest.TestCase):
         mock_service = self.get_mock_service()
         mock_backend = self.get_mock_backend()
 
-        with patch("v3_runner.SamplerV2") as mock_sampler_cls:
-            mock_sampler = MagicMock()
-            mock_sampler_cls.return_value = mock_sampler
+        # Mock future scheduled time for session 0
+        with patch("v3_runner.PREREG_DIR", TEST_DATA_DIR):
+            with open(REPO_ROOT / "prereg" / "v3_manifest_core.json", encoding="utf-8") as f:
+                future_manifest = json.load(f)
+            future_manifest["sessions"][0]["scheduled_time_utc"] = (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat()
+            with open(TEST_DATA_DIR / "v3_manifest_core.json", "w", encoding="utf-8") as f:
+                json.dump(future_manifest, f)
 
-            with self.assertRaises(RuntimeError) as ctx:
-                v3_runner.submit_session(
-                    session_id=0,
-                    approval_token=self.test_token,
-                    enforce_schedule=True,
-                    service=mock_service,
-                    backend=mock_backend
-                )
-            self.assertIn("Schedule window error", str(ctx.exception))
-            mock_sampler.run.assert_not_called()
+            with patch("v3_runner.SamplerV2") as mock_sampler_cls:
+                mock_sampler = MagicMock()
+                mock_sampler_cls.return_value = mock_sampler
+
+                with self.assertRaises(RuntimeError) as ctx:
+                    v3_runner.submit_session(
+                        session_id=0,
+                        approval_token=self.test_token,
+                        enforce_schedule=True,
+                        service=mock_service,
+                        backend=mock_backend
+                    )
+                self.assertIn("Schedule window error", str(ctx.exception))
+                mock_sampler.run.assert_not_called()
 
     # -------------------------------------------------------------------------
     # 7. ISA Hash Mismatch Aborts Before Submission

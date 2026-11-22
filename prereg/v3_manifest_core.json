@@ -208,8 +208,8 @@
   "sessions": [
     {
       "session_id": 0,
-      "scheduled_time_utc": "2026-11-22T11:00:00+00:00",
-      "latest_allowed_time_utc": "2026-11-22T11:30:00+00:00",
+      "scheduled_time_utc": "2026-11-22T10:00:00+00:00",
+      "latest_allowed_time_utc": "2026-11-22T10:30:00+00:00",
       "random_seed": 20261122,
       "circuit_execution_order": [
         "D_tau_8ns_G_tT",
@@ -230,8 +230,8 @@
     },
     {
       "session_id": 1,
-      "scheduled_time_utc": "2026-11-22T11:10:00+00:00",
-      "latest_allowed_time_utc": "2026-11-22T11:40:00+00:00",
+      "scheduled_time_utc": "2026-11-22T10:10:00+00:00",
+      "latest_allowed_time_utc": "2026-11-22T10:40:00+00:00",
       "random_seed": 20261123,
       "circuit_execution_order": [
         "I_tau_8ns_E_t2T_mc",
@@ -252,8 +252,8 @@
     },
     {
       "session_id": 2,
-      "scheduled_time_utc": "2026-11-22T11:20:00+00:00",
-      "latest_allowed_time_utc": "2026-11-22T11:50:00+00:00",
+      "scheduled_time_utc": "2026-11-22T10:20:00+00:00",
+      "latest_allowed_time_utc": "2026-11-22T10:50:00+00:00",
       "random_seed": 20261124,
       "circuit_execution_order": [
         "I_tau_8ns_G_tT",
@@ -274,8 +274,8 @@
     },
     {
       "session_id": 3,
-      "scheduled_time_utc": "2026-11-22T11:30:00+00:00",
-      "latest_allowed_time_utc": "2026-11-22T12:00:00+00:00",
+      "scheduled_time_utc": "2026-11-22T10:30:00+00:00",
+      "latest_allowed_time_utc": "2026-11-22T11:00:00+00:00",
       "random_seed": 20261125,
       "circuit_execution_order": [
         "I_tau_8ns_G_t0",
@@ -296,8 +296,8 @@
     },
     {
       "session_id": 4,
-      "scheduled_time_utc": "2026-11-22T11:40:00+00:00",
-      "latest_allowed_time_utc": "2026-11-22T12:10:00+00:00",
+      "scheduled_time_utc": "2026-11-22T10:40:00+00:00",
+      "latest_allowed_time_utc": "2026-11-22T11:10:00+00:00",
       "random_seed": 20261126,
       "circuit_execution_order": [
         "D_tau_8ns_E_tT",
@@ -318,8 +318,8 @@
     },
     {
       "session_id": 5,
-      "scheduled_time_utc": "2026-11-22T11:50:00+00:00",
-      "latest_allowed_time_utc": "2026-11-22T12:20:00+00:00",
+      "scheduled_time_utc": "2026-11-22T10:50:00+00:00",
+      "latest_allowed_time_utc": "2026-11-22T11:20:00+00:00",
       "random_seed": 20261127,
       "circuit_execution_order": [
         "D_tau_8ns_E_t2T_mc",
@@ -340,8 +340,8 @@
     },
     {
       "session_id": 6,
-      "scheduled_time_utc": "2026-11-22T12:00:00+00:00",
-      "latest_allowed_time_utc": "2026-11-22T12:30:00+00:00",
+      "scheduled_time_utc": "2026-11-22T11:00:00+00:00",
+      "latest_allowed_time_utc": "2026-11-22T11:30:00+00:00",
       "random_seed": 20261128,
       "circuit_execution_order": [
         "D_tau_8ns_E_t2T_mc",
@@ -362,8 +362,8 @@
     },
     {
       "session_id": 7,
-      "scheduled_time_utc": "2026-11-22T12:10:00+00:00",
-      "latest_allowed_time_utc": "2026-11-22T12:40:00+00:00",
+      "scheduled_time_utc": "2026-11-22T11:10:00+00:00",
+      "latest_allowed_time_utc": "2026-11-22T11:40:00+00:00",
       "random_seed": 20261129,
       "circuit_execution_order": [
         "I_tau_8ns_G_t2T_mc",
@@ -384,8 +384,8 @@
     },
     {
       "session_id": 8,
-      "scheduled_time_utc": "2026-11-22T12:20:00+00:00",
-      "latest_allowed_time_utc": "2026-11-22T12:50:00+00:00",
+      "scheduled_time_utc": "2026-11-22T11:20:00+00:00",
+      "latest_allowed_time_utc": "2026-11-22T11:50:00+00:00",
       "random_seed": 20261130,
       "circuit_execution_order": [
         "D_tau_8ns_G_t2T_mc",
@@ -406,8 +406,8 @@
     },
     {
       "session_id": 9,
-      "scheduled_time_utc": "2026-11-22T12:30:00+00:00",
-      "latest_allowed_time_utc": "2026-11-22T13:00:00+00:00",
+      "scheduled_time_utc": "2026-11-22T11:30:00+00:00",
+      "latest_allowed_time_utc": "2026-11-22T12:00:00+00:00",
       "random_seed": 20261131,
       "circuit_execution_order": [
         "D_tau_8ns_G_t0",
@@ -428,8 +428,8 @@
     },
     {
       "session_id": 10,
-      "scheduled_time_utc": "2026-11-22T12:40:00+00:00",
-      "latest_allowed_time_utc": "2026-11-22T13:10:00+00:00",
+      "scheduled_time_utc": "2026-11-22T11:40:00+00:00",
+      "latest_allowed_time_utc": "2026-11-22T12:10:00+00:00",
       "random_seed": 20261132,
       "circuit_execution_order": [
         "I_tau_8ns_G_tT",
@@ -450,8 +450,8 @@
     },
     {
       "session_id": 11,
-      "scheduled_time_utc": "2026-11-22T12:50:00+00:00",
-      "latest_allowed_time_utc": "2026-11-22T13:20:00+00:00",
+      "scheduled_time_utc": "2026-11-22T11:50:00+00:00",
+      "latest_allowed_time_utc": "2026-11-22T12:20:00+00:00",
       "random_seed": 20261133,
       "circuit_execution_order": [
         "I_tau_8ns_E_t2T_mc",
@@ -472,8 +472,8 @@
     },
     {
       "session_id": 12,
-      "scheduled_time_utc": "2026-11-22T13:00:00+00:00",
-      "latest_allowed_time_utc": "2026-11-22T13:30:00+00:00",
+      "scheduled_time_utc": "2026-11-22T12:00:00+00:00",
+      "latest_allowed_time_utc": "2026-11-22T12:30:00+00:00",
       "random_seed": 20261134,
       "circuit_execution_order": [
         "D_tau_8ns_E_tT",
@@ -494,8 +494,8 @@
     },
     {
       "session_id": 13,
-      "scheduled_time_utc": "2026-11-22T13:10:00+00:00",
-      "latest_allowed_time_utc": "2026-11-22T13:40:00+00:00",
+      "scheduled_time_utc": "2026-11-22T12:10:00+00:00",
+      "latest_allowed_time_utc": "2026-11-22T12:40:00+00:00",
       "random_seed": 20261135,
       "circuit_execution_order": [
         "I_tau_8ns_E_tT",
@@ -516,8 +516,8 @@
     },
     {
       "session_id": 14,
-      "scheduled_time_utc": "2026-11-22T13:20:00+00:00",
-      "latest_allowed_time_utc": "2026-11-22T13:50:00+00:00",
+      "scheduled_time_utc": "2026-11-22T12:20:00+00:00",
+      "latest_allowed_time_utc": "2026-11-22T12:50:00+00:00",
       "random_seed": 20261136,
       "circuit_execution_order": [
         "D_tau_8ns_G_t2T_mc",
@@ -538,8 +538,8 @@
     },
     {
       "session_id": 15,
-      "scheduled_time_utc": "2026-11-22T13:30:00+00:00",
-      "latest_allowed_time_utc": "2026-11-22T14:00:00+00:00",
+      "scheduled_time_utc": "2026-11-22T12:30:00+00:00",
+      "latest_allowed_time_utc": "2026-11-22T13:00:00+00:00",
       "random_seed": 20261137,
       "circuit_execution_order": [
         "I_tau_8ns_E_t0",
@@ -559,5 +559,5 @@
       "session_circuits_count": 12
     }
   ],
-  "manifest_sha256": "24f9b649433af41a990866f39c05f132a58d70ead60284e5c995f22e597f9826"
+  "manifest_sha256": "02825160e9a9c4adbba6434e7819ba73b343a84501d46735e5d1c195a5b8a52a"
 }
