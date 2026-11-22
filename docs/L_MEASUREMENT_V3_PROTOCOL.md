@@ -88,15 +88,16 @@ Minden mérési alkalom egyetlen zárt blokkból áll:
 
 1. **16 Elkülönített Mérési Alkalom:**
    - 16 időben szeparált alkalom, alkalmanként 1 blokk.
-   - Időköz: $\Delta t = 60\text{ perc}$ (vagy $90\text{ perc}$ a teljes diurnal drift átfogására).
+   - Tervezett időköz: $\Delta t = 60\text{ perc}$ (vagy $90\text{ perc}$).
    - Nem egyetlen gyors beküldési köteg, hanem diszkrét, független QPU jobok.
+   - *Függetlenségi korlát:* Az óránként beküldött jobok nem tekinthetők bizonyítottan független mintáknak; a hardveres időbeli drift (pl. hőmérsékleti fluktuáció, TLS állapotváltozás) autokorrelációt vihet a mérési sorozatba. A protokoll számol ezzel a korláttal (ld. 8. szakasz).
 2. **Blokkon Belüli Véletlen Áramkörsorrend:**
    - Minden alkalomhoz determinisztikus pszeudo-véletlen seed rögzítve (`seed = 20261122 + session_id`).
-   - A sorrend átrendezése kiküszöböli a hardveres drift szisztematikus áttolódását az áramkörök között.
-3. **Inicializálás és Carry-over Elemzés:**
-   - Minden egyes áramkör előtt és az áramkörök minden egyes lövésénél lefut a hardveres aktív reset (`init_qubits=True`).
-   - A lövések közötti termalizációs idő $250.0\ \mu\text{s}$ (`rep_delay`), amihez hozzájön a pre-reset conditioning és padding időtartama ($80.128\ \mu\text{s}$). Ez összesen $> 330\ \mu\text{s}$ holtidő ($> 1.8 \times T_1$).
-   - Az áramkörök közötti lehetséges carry-over így kizárólag a legelső lövésnél léphetne fel elméletileg, de a hardveres aktív reset és a $250\ \mu\text{s}$ késleltetés mellett ennek valószínűsége $< 0.2\%$, és a véletlenszerű sorrend miatt nem tud irányított torzítást okozni.
+   - A sorrend átrendezése kiegyensúlyozza a monoton időbeli drift hatását a karok és állapotok között.
+3. **Inicializálás és Carry-over Dokumentáció:**
+   - Az `init_qubits=True` futtatási opció kéri az IBM Runtime rendszertől az inicializálást minden lövés előtt; a hardveres szintű konkrét implementáció (aktív visszacsatolás vagy passzív termalizáció) az IBM vezérlő firmware zárt része, ezért önmagában nem tekinthető bizonyított aktív-reset mechanizmusnak.
+   - A lövések közötti beállított késleltetés $250.0\ \mu\text{s}$ (`rep_delay`), kiegészülve a pre-reset conditioning és padding időtartamával ($80.128\ \mu\text{s}$). Ez összesen $> 330\ \mu\text{s}$ időablak ($> 1.8 \times T_1$).
+   - A lehetséges carry-over mértékére nem állítunk konkrét százalékos korlátot dedikált hardveres igazolás hiányában; a véletlenszerű áramkörsorrend célja a szisztematikus áthallás csökkentése.
 
 ---
 
@@ -142,22 +143,22 @@ $$z = \frac{D_2}{\sqrt{\operatorname{Var}(D_2)}}, \quad p = 2 \cdot (1 - \Phi(|z
 ### Értelmezési Diagnosztika (NEM Blokk-kizárás!)
 - Családi szignifikancia: 32 ellenőrzésre Bonferroni-korrekció összesített $\alpha = 0.01$ mellett:
   $$\alpha_{\text{bonf}} = \frac{0.01}{32} = 0.0003125 \implies z_{\text{crit}} \approx 3.605$$
-- **Szerepe:** Diagnosztikai jelzés. Ha szignifikáns eltérés mutatkozik, az $L$ nem nevezhető igazolt egyexponenciális rátaeltérésnek, de a blokkokat **tilos kizárni**.
+- **Szerepe és korlátja:** Diagnosztikai jelzés durva modell-törésre. *Figyelmeztetés:* A szimulációs vizsgálat kimutatta, hogy finom szivárgási folyamatoknál (|2⟩ kaszkád, P2 = 0.01) a szigorú Bonferroni-küszöb miatt a $D_2$ teszt mindössze ~0.6%–0.8%-ban jelzett eltérést, ami megegyezik az I. fajú hiba arányával. Ezért a $D_2$ teszt **nem tekinthető hatásos szivárgás-felismerőnek**, kizárólag durva nemexponencialitási anomáliák jelzésére szolgál. Eltérés esetén a blokkokat **tilos kizárni**, de a relaxációs rátát nem szabad tiszta egyexponenciális folyamatként bemutatni.
 
 ---
 
-## 7. Keretbecslés és Költségtranszparencia
+## 7. Keretbecslés és Élő Költségellenőrzés
 
 A mai 8 blokkos éles kalibráció alapján (`ibm_marrakesh`, Heron r2: 44 000 lövés / 24 másodperc tiszta QPU idő $\implies 0.545\text{ ms / lövés}$):
 
-| Konfiguráció | Áramkör / alkalom | Lövés / alkalom | Összes lövés (16 alkalom) | Becsült tiszta QPU idő | Meglévő szabad keret | Hátralévő keret a mérés után |
-|---|---|---|---|---|---|---|
-| **Opció A: Mag (D + I)** | 12 | 10 000 | 160 000 | **~87.3 másodperc** | 432.0 másodperc | **~344.7 másodperc** |
-| **Opció B: Mag + $D_{\text{fast}}$** | 16 | 13 000 | 208 000 | **~113.5 másodperc** | 432.0 másodperc | **~318.5 másodperc** |
+| Konfiguráció | Áramkör / alkalom | Lövés / alkalom | Összes lövés (16 alkalom) | Becsült tiszta QPU idő |
+|---|---|---|---|---|
+| **Opció A: Mag (D + I)** | 12 | 10 000 | 160 000 | **~87.3 másodperc** |
+| **Opció B: Mag + $D_{\text{fast}}$** | 16 | 13 000 | 208 000 | **~113.5 másodperc** |
 
-> **Költség- és Keret-garancia:**  
-> A teljes 16 alkalmas mérési kampány a meglévő 432 másodperces ingyenes IBM keretnek mindössze **20–26%-át** használja fel.  
-> **Fizetős túlfutási kockázat: 0.0% (ZERO).**
+> **Élő Keret- és Költséggarancia:**  
+> A repó nem tartalmaz rögzített szabadkeret-állítást vagy "nulla kockázat" garanciát. Az aktuális szabad keretet a futtató közvetlenül az IBM Quantum fiókból (`service.usage()`) ellenőrzi minden indítási kísérlet előtt.  
+> Ha a lekérdezett hátralévő idő kevesebb, mint a kampány becsült igénye, a beküldő **azonnal megtagadja az indítást**. Fizetős túlfutás nincs engedélyezve.
 
 ---
 
@@ -174,9 +175,9 @@ A `src/v3_simulator.py` futtatásának eredményei (naplózva a `results/v3_simu
    - Döntés: **98.4%** (492/500) helyesen *"Összeegyeztethető +0.08-cal, nem 0-val"*.
 3. **Case 3: Köztes érték ($L = +0.04$):**
    - A döntések megoszlanak a két határeset és a *"Nem döntő"* (21.6%) / *"Egyikkel sem"* (9.6%) kategóriák között.
-4. **Case 4: Szivárgási modell ($|2\rangle \to |1\rangle \to |0\rangle$ kaszkád):**
-   - Kimutatja az enyhe szivárgási műterméket ($+0.0041$), és a $D_2$ Bonferroni teszt megfelelően reagál a nemlinearitásra.
+4. **Case 4: Szivárgási modell ($|2\rangle \to |1\rangle \to |0\rangle$ kaszkád, $P_2 = 0.01$):**
+   - Enyhe látszólagos rátalassulást ($+0.0041$) eredményez. A $D_2$ Bonferroni teszt csak 0.6%-ban jelez eltérést, ami igazolja, hogy a $D_2$ ilyen gyenge szivárgást nem képes megbízhatóan kiszűrni.
 5. **Case 5: Időbeli függés (AR(1) drift a 16 alkalom között, $\rho = 0.50$):**
-   - A $99\%$-os CI valós lefedése erős autokorreláció mellett is **96.4%** marad (92.0% helyes döntési arány).
+   - Erős autokorreláció mellett a $99\%$-os elméleti konfidenciasáv valós lefedettsége **96.4%-ra csökken** (92.0% döntés a 0 mellett). Ez a modellcsökkenés a riportban transzparensen rögzítendő.
 6. **Case 6: Matematikai határesetek és hibás logaritmustartomány:**
-   - Negatív kontraszt vagy nem pozitív ráta esetén az elemző azonnal **`NEM ERTEKELHETO (UNDEFINED RATES)`** jelzéssel áll le, kizárva a csendes adatelhagyást.
+   - Hiányzó áramkör, nem definiálható ráta vagy negatív kontraszt esetén az elemző azonnal **`NEM ERTEKELHETO (UNDEFINED RATES)`** jelzéssel áll le, kizárva a csendes adatelhagyást vagy a nullával való pótlást.

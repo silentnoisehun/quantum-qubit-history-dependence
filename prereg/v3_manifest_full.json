@@ -1,6 +1,6 @@
 {
   "manifest_version": "v3.0.0-frozen",
-  "created_at_utc": "2026-11-22T09:04:43.583110+00:00",
+  "created_at_utc": "2026-11-22T10:00:00Z",
   "backend": "ibm_marrakesh",
   "processor_type": "Heron r2",
   "qubit_primary": 21,
@@ -23,11 +23,11 @@
     "include_dfast": true
   },
   "carry_over_analysis": {
-    "init_qubits_active_reset": true,
+    "init_qubits": "Requested runtime option for initial state reset.",
     "repetition_delay_us": 250.0,
     "pre_reset_conditioning_and_delay_us": 80.128,
-    "relaxation_ratio_rep_delay_over_T1": 1.3888888888888888,
-    "risk_mitigation": "Each circuit execution is preceded by active reset and separated by 250 us rep_delay (>1.38 x T1). Randomized circuit order across sessions eliminates systematic order bias. Carry-over between distinct circuits is strictly bounded to <0.2% of the first shot if active reset had 100% residual failure."
+    "inter_session_spacing_minutes": 60,
+    "risk_mitigation": "Within-block circuit randomization balances temporal drift. Hourly separated sessions provide time separation, though inter-session correlation (e.g. diurnal drift) remains an empirical property evaluated in analysis."
   },
   "budget_estimation": {
     "total_sessions": 16,
@@ -37,9 +37,7 @@
     "calibrated_seconds_per_shot": 0.0005454545454545455,
     "estimated_qpu_seconds_per_session": 7.09,
     "estimated_total_qpu_seconds": 113.45,
-    "current_free_quota_remaining_seconds": 432.0,
-    "estimated_quota_remaining_after_campaign": 318.55,
-    "paid_overage_risk": "ZERO (Campaign requires ~110-145s of the 432s available free quota)"
+    "quota_enforcement": "The actual available quota MUST be queried live from the active IBM Quantum account before submission. If available remaining QPU seconds < estimated total QPU seconds, execution will fail-closed."
   },
   "circuits_catalog": {
     "D_tau_8ns_G_t0": {
@@ -653,5 +651,5 @@
       "session_circuits_count": 16
     }
   ],
-  "manifest_sha256": "7f17f993f2869212f64b0d8d5a87184cafa0a7a3483eef09b02b2d9291f457cf"
+  "manifest_sha256": "4b6ee525934def5c6198546f2a9da30864523f92ab8a210d5be9f7094052c8bf"
 }

@@ -2,16 +2,12 @@
 """
 v3_analysis.py — Strict Pre-registered Analysis Engine for L-Measurement v3.
 
-Specifications:
-- S(t) = P_E(t) - P_G(t)
-- Gamma = -ln[S(T)/S(0)] / T
-- L_s = ln(Gamma_I / Gamma_D) per session s (16 sessions)
-- Primary result: mean(L_s) with 99% Student-t CI (df = 15)
-- Decision outcomes against H0 (0.00) and H1 (+0.08)
-- Model check D2 = S(2T) - S(T)^2 / S(0) with full delta-method variance
-  propagation (binomial errors of S0, ST, S2T) and family-wise Bonferroni correction
-  across 32 tests at total alpha = 0.01.
-- Fail-closed rigor: No silent omissions, no post-hoc filtering.
+Revisions (Point 1):
+- FAIL-CLOSED: No default counts (no zero-padding or fallbacks).
+- Strict validation: Every required circuit must be present with exact shot count,
+  non-negative counts, and ones <= shots.
+- Missing circuit, corrupted count, or rate calculation failure IMMEDIATELY halts
+  the campaign with 'NEM ERTEKELHETO' and blocks CI computation.
 """
 
 import math
@@ -20,10 +16,26 @@ from typing import List, Dict, Any, Tuple, Optional
 import numpy as np
 from scipy import stats
 
+EXPECTED_CORE_CIRCUITS = {
+    # arm, prep, t_name: expected_shots
+    ("D", "G", "t0"): 500,
+    ("D", "E", "t0"): 500,
+    ("D", "G", "tT"): 500,
+    ("D", "E", "tT"): 1500,
+    ("D", "G", "t2T"): 1000,
+    ("D", "E", "t2T"): 1000,
+    ("I", "G", "t0"): 500,
+    ("I", "E", "t0"): 500,
+    ("I", "G", "tT"): 500,
+    ("I", "E", "tT"): 1500,
+    ("I", "G", "t2T"): 1000,
+    ("I", "E", "t2T"): 1000,
+}
+
 @dataclass
 class SessionRawCounts:
     session_id: int
-    # Counts dictionary: key = (arm, prep, t_name) -> {'ones': int, 'shots': int}
+    # key: (arm, prep, t_name) -> {'ones': int, 'shots': int}
     counts: Dict[Tuple[str, str, str], Dict[str, int]]
 
 @dataclass
@@ -52,10 +64,11 @@ class ArmDecayMetrics:
 @dataclass
 class SessionMetrics:
     session_id: int
-    arm_D: ArmDecayMetrics
-    arm_I: ArmDecayMetrics
+    arm_D: Optional[ArmDecayMetrics]
+    arm_I: Optional[ArmDecayMetrics]
     L_s: Optional[float]
     error_note: Optional[str]
+    is_valid: bool
 
 @dataclass
 class CampaignAnalysisResult:
@@ -85,52 +98,79 @@ class AnalysisEngineV3:
         self.n_bonf_tests = 32
         self.alpha_bonf = self.alpha_total / self.n_bonf_tests  # 0.0003125
 
+    def validate_session_counts(self, counts: Dict[Tuple[str, str, str], Dict[str, int]]) -> Optional[str]:
+        """
+        Validates completeness, shot counts, and numerical validity without any fallback defaults.
+        """
+        for key, exp_shots in EXPECTED_CORE_CIRCUITS.items():
+            if key not in counts:
+                return f"Missing required circuit: {key}"
+            entry = counts[key]
+            if not isinstance(entry, dict) or "ones" not in entry or "shots" not in entry:
+                return f"Corrupted circuit entry structure for {key}: {entry}"
+            shots = entry["shots"]
+            ones = entry["ones"]
+            if shots != exp_shots:
+                return f"Shot count mismatch for {key}: expected {exp_shots}, found {shots}"
+            if ones < 0 or ones > shots:
+                return f"Invalid ones count for {key}: {ones} out of {shots}"
+        return None
+
     def compute_prob_and_var(self, ones: int, shots: int) -> Tuple[float, float]:
-        if shots <= 0:
-            return 0.0, 0.0
         p = ones / shots
-        # Binomial variance of sample proportion
         var_p = (p * (1.0 - p)) / shots
         return p, var_p
 
-    def analyze_arm(self, arm: str, counts: Dict[Tuple[str, str, str], Dict[str, int]]) -> ArmDecayMetrics:
-        # 1. Readout t=0
-        c_e0 = counts.get((arm, "E", "t0"), {"ones": 0, "shots": 500})
-        c_g0 = counts.get((arm, "G", "t0"), {"ones": 0, "shots": 500})
+    def analyze_arm(self, arm: str, counts: Dict[Tuple[str, str, str], Dict[str, int]]) -> Tuple[Optional[ArmDecayMetrics], Optional[str]]:
+        # Strictly require all 6 circuits for the arm
+        required = [
+            ("G", "t0", 500), ("E", "t0", 500),
+            ("G", "tT", 500), ("E", "tT", 1500),
+            ("G", "t2T", 1000), ("E", "t2T", 1000)
+        ]
+        for prep, t_name, exp_shots in required:
+            k = (arm, prep, t_name)
+            if k not in counts:
+                return None, f"Arm {arm} missing circuit {k}"
+            if counts[k]["shots"] != exp_shots:
+                return None, f"Arm {arm} circuit {k} shots {counts[k]['shots']} != {exp_shots}"
+            if counts[k]["ones"] < 0 or counts[k]["ones"] > counts[k]["shots"]:
+                return None, f"Arm {arm} circuit {k} invalid ones {counts[k]['ones']}"
+
+        c_e0 = counts[(arm, "E", "t0")]
+        c_g0 = counts[(arm, "G", "t0")]
         p_e0, var_e0 = self.compute_prob_and_var(c_e0["ones"], c_e0["shots"])
         p_g0, var_g0 = self.compute_prob_and_var(c_g0["ones"], c_g0["shots"])
         s0 = p_e0 - p_g0
         var_s0 = var_e0 + var_g0
 
-        # 2. Readout t=T
-        c_eT = counts.get((arm, "E", "tT"), {"ones": 0, "shots": 1500})
-        c_gT = counts.get((arm, "G", "tT"), {"ones": 0, "shots": 500})
+        c_eT = counts[(arm, "E", "tT")]
+        c_gT = counts[(arm, "G", "tT")]
         p_eT, var_eT = self.compute_prob_and_var(c_eT["ones"], c_eT["shots"])
         p_gT, var_gT = self.compute_prob_and_var(c_gT["ones"], c_gT["shots"])
         sT = p_eT - p_gT
         var_sT = var_eT + var_gT
 
-        # 3. Readout t=2T
-        c_e2T = counts.get((arm, "E", "t2T"), {"ones": 0, "shots": 1000})
-        c_g2T = counts.get((arm, "G", "t2T"), {"ones": 0, "shots": 1000})
+        c_e2T = counts[(arm, "E", "t2T")]
+        c_g2T = counts[(arm, "G", "t2T")]
         p_e2T, var_e2T = self.compute_prob_and_var(c_e2T["ones"], c_e2T["shots"])
         p_g2T, var_g2T = self.compute_prob_and_var(c_g2T["ones"], c_g2T["shots"])
         s2T = p_e2T - p_g2T
         var_s2T = var_e2T + var_g2T
 
-        # 4. Rate Gamma
+        # Gamma calculation
         gamma = None
         gamma_err = None
         if s0 <= 0 or sT <= 0:
-            gamma_err = f"Non-positive contrast: s0={s0:.4f}, sT={sT:.4f}"
+            gamma_err = f"Non-positive contrast in arm {arm}: s0={s0:.4f}, sT={sT:.4f}"
         else:
             ratio = sT / s0
             if ratio <= 0:
-                gamma_err = f"Non-positive ratio: sT/s0={ratio:.4f}"
+                gamma_err = f"Non-positive contrast ratio in arm {arm}: sT/s0={ratio:.4f}"
             else:
                 gamma = -math.log(ratio) / self.T
 
-        # 5. Model Check D2 = S(2T) - S(T)^2 / S(0)
+        # D2 Model check
         d2 = None
         d2_se = None
         d2_z = None
@@ -141,10 +181,7 @@ class AnalysisEngineV3:
             s_pred_2T = (sT ** 2) / s0
             d2 = s2T - s_pred_2T
 
-            # Exact delta-method variance:
-            # dD2 / dS(2T) = 1
-            # dD2 / dS(T)  = -2 * S(T) / S(0)
-            # dD2 / dS(0)  = (S(T) / S(0))^2
+            # Delta method:
             grad_2T = 1.0
             grad_T = -2.0 * sT / s0
             grad_0 = (sT / s0) ** 2
@@ -152,7 +189,6 @@ class AnalysisEngineV3:
             var_d2 = (grad_2T ** 2) * var_s2T + (grad_T ** 2) * var_sT + (grad_0 ** 2) * var_s0
             d2_se = math.sqrt(max(var_d2, 1e-18))
             d2_z = d2 / d2_se
-            # Two-sided normal p-value
             d2_p = 2.0 * (1.0 - stats.norm.cdf(abs(d2_z)))
             if d2_p < self.alpha_bonf:
                 d2_flag = True
@@ -165,15 +201,35 @@ class AnalysisEngineV3:
             gamma=gamma, gamma_error=gamma_err,
             d2=d2, d2_se=d2_se, d2_z=d2_z, d2_p=d2_p,
             d2_deviation_flag=d2_flag
-        )
+        ), None
 
     def analyze_session(self, session: SessionRawCounts) -> SessionMetrics:
-        arm_d = self.analyze_arm("D", session.counts)
-        arm_i = self.analyze_arm("I", session.counts)
+        val_err = self.validate_session_counts(session.counts)
+        if val_err:
+            return SessionMetrics(
+                session_id=session.session_id,
+                arm_D=None, arm_I=None, L_s=None,
+                error_note=val_err, is_valid=False
+            )
+
+        arm_d, err_d = self.analyze_arm("D", session.counts)
+        if err_d:
+            return SessionMetrics(
+                session_id=session.session_id,
+                arm_D=None, arm_I=None, L_s=None,
+                error_note=err_d, is_valid=False
+            )
+
+        arm_i, err_i = self.analyze_arm("I", session.counts)
+        if err_i:
+            return SessionMetrics(
+                session_id=session.session_id,
+                arm_D=arm_d, arm_I=None, L_s=None,
+                error_note=err_i, is_valid=False
+            )
 
         l_s = None
         err = None
-
         if arm_d.gamma is None:
             err = f"Arm D rate undefined: {arm_d.gamma_error}"
         elif arm_i.gamma is None:
@@ -185,15 +241,13 @@ class AnalysisEngineV3:
 
         return SessionMetrics(
             session_id=session.session_id,
-            arm_D=arm_d,
-            arm_I=arm_i,
-            L_s=l_s,
-            error_note=err
+            arm_D=arm_d, arm_I=arm_i, L_s=l_s,
+            error_note=err, is_valid=(l_s is not None)
         )
 
     def analyze_campaign(self, sessions: List[SessionRawCounts]) -> CampaignAnalysisResult:
-        session_metrics = [self.analyze_session(s) for s in sessions]
         n_total = len(sessions)
+        session_metrics = [self.analyze_session(s) for s in sessions]
         evaluable_sessions = [m for m in session_metrics if m.L_s is not None]
         n_eval = len(evaluable_sessions)
         undefined_list = [
@@ -201,19 +255,19 @@ class AnalysisEngineV3:
             for m in session_metrics if m.L_s is None
         ]
 
-        # Model check diagnostics collection
         all_d2_tests = []
         for m in session_metrics:
-            for arm_m in [m.arm_D, m.arm_I]:
-                all_d2_tests.append({
-                    "session_id": m.session_id,
-                    "arm": arm_m.arm,
-                    "d2": arm_m.d2,
-                    "d2_se": arm_m.d2_se,
-                    "d2_z": arm_m.d2_z,
-                    "d2_p": arm_m.d2_p,
-                    "flagged": arm_m.d2_deviation_flag
-                })
+            if m.arm_D is not None and m.arm_I is not None:
+                for arm_m in [m.arm_D, m.arm_I]:
+                    all_d2_tests.append({
+                        "session_id": m.session_id,
+                        "arm": arm_m.arm,
+                        "d2": arm_m.d2,
+                        "d2_se": arm_m.d2_se,
+                        "d2_z": arm_m.d2_z,
+                        "d2_p": arm_m.d2_p,
+                        "flagged": arm_m.d2_deviation_flag
+                    })
 
         num_flagged_d2 = sum(1 for t in all_d2_tests if t["flagged"])
         d2_summary = {
@@ -224,8 +278,8 @@ class AnalysisEngineV3:
             "diagnostic_note": "Interpretive diagnostic only; no sessions are excluded based on D2."
         }
 
-        # If any session is undefined, primary pre-registered plan is incomplete fail-closed
-        if n_eval < n_total:
+        # FAIL-CLOSED: If any session is missing, invalid, or undefined, STOP and refuse CI
+        if n_eval < n_total or n_total != 16:
             return CampaignAnalysisResult(
                 n_sessions_total=n_total,
                 n_sessions_evaluable=n_eval,
@@ -235,8 +289,8 @@ class AnalysisEngineV3:
                 ci99_lower=None, ci99_upper=None,
                 t_stat_vs_0=None, p_val_vs_0=None,
                 t_stat_vs_008=None, p_val_vs_008=None,
-                decision_verdict="NEM ERTEKELHETO (UNDEFINED RATES)",
-                decision_explanation=f"{n_total - n_eval} session(s) produced undefined rates. Data cannot be silently omitted.",
+                decision_verdict="NEM ERTEKELHETO",
+                decision_explanation=f"A kampány {n_total} alkalmából csak {n_eval} értékelhető hiánytalanul. Hiányos vagy hibás adatoknál elsődleges konfidenciaintervallum nem képezhető.",
                 d2_model_check_summary=d2_summary,
                 undefined_sessions=undefined_list
             )
@@ -247,18 +301,16 @@ class AnalysisEngineV3:
         se_l = std_l / math.sqrt(n_total)
         df = n_total - 1  # 15 for 16 sessions
 
-        t_crit = stats.t.ppf(0.995, df)  # two-sided 99% CI
+        t_crit = stats.t.ppf(0.995, df)
         ci_lower = mean_l - t_crit * se_l
         ci_upper = mean_l + t_crit * se_l
 
-        # t-tests vs 0.00 and vs +0.08
         t_stat_0 = (mean_l - 0.0) / se_l
         p_val_0 = 2.0 * (1.0 - stats.t.cdf(abs(t_stat_0), df))
 
         t_stat_008 = (mean_l - 0.08) / se_l
         p_val_008 = 2.0 * (1.0 - stats.t.cdf(abs(t_stat_008), df))
 
-        # Decision rule evaluation per Section 5
         contains_0 = (ci_lower <= 0.0 <= ci_upper)
         contains_008 = (ci_lower <= 0.08 <= ci_upper)
 

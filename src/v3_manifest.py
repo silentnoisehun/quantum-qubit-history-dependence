@@ -19,6 +19,7 @@ from v3_circuit_builder import CircuitBuilderV3, TimingSpecV3
 
 def generate_frozen_manifest(
     start_utc_iso: str = "2026-11-23T00:00:00Z",
+    created_at_utc: str = "2026-11-22T10:00:00Z",
     interval_minutes: int = 60,
     include_dfast: bool = False,
     base_seed: int = 20261122
@@ -77,7 +78,7 @@ def generate_frozen_manifest(
 
     manifest = {
         "manifest_version": "v3.0.0-frozen",
-        "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "created_at_utc": created_at_utc,
         "backend": "ibm_marrakesh",
         "processor_type": "Heron r2",
         "qubit_primary": 21,
@@ -100,11 +101,11 @@ def generate_frozen_manifest(
             "include_dfast": include_dfast
         },
         "carry_over_analysis": {
-            "init_qubits_active_reset": True,
+            "init_qubits": "Requested runtime option for initial state reset.",
             "repetition_delay_us": 250.0,
             "pre_reset_conditioning_and_delay_us": 80.128,
-            "relaxation_ratio_rep_delay_over_T1": 250.0 / 180.0,
-            "risk_mitigation": "Each circuit execution is preceded by active reset and separated by 250 us rep_delay (>1.38 x T1). Randomized circuit order across sessions eliminates systematic order bias. Carry-over between distinct circuits is strictly bounded to <0.2% of the first shot if active reset had 100% residual failure."
+            "inter_session_spacing_minutes": interval_minutes,
+            "risk_mitigation": "Within-block circuit randomization balances temporal drift. Hourly separated sessions provide time separation, though inter-session correlation (e.g. diurnal drift) remains an empirical property evaluated in analysis."
         },
         "budget_estimation": {
             "total_sessions": 16,
@@ -114,9 +115,7 @@ def generate_frozen_manifest(
             "calibrated_seconds_per_shot": seconds_per_shot,
             "estimated_qpu_seconds_per_session": round(est_qpu_seconds_per_session, 2),
             "estimated_total_qpu_seconds": round(est_total_qpu_seconds, 2),
-            "current_free_quota_remaining_seconds": 432.0,
-            "estimated_quota_remaining_after_campaign": round(432.0 - est_total_qpu_seconds, 2),
-            "paid_overage_risk": "ZERO (Campaign requires ~110-145s of the 432s available free quota)"
+            "quota_enforcement": "The actual available quota MUST be queried live from the active IBM Quantum account before submission. If available remaining QPU seconds < estimated total QPU seconds, execution will fail-closed."
         },
         "circuits_catalog": circuits_catalog,
         "sessions": sessions
