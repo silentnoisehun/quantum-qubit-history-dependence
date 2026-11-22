@@ -96,14 +96,24 @@ for b in blocks:
 
     l_tau0 = math.log(gamma_i / gamma_d) if (gamma_d and gamma_i) else None
 
-    # Model check at 2T (Arm D)
+    # Model check at 2T for BOTH Arm D and Arm I
     pe2T_d = cmap[('D', 8e-09, 'E', 2*T, True)]
     pg2T_d = cmap[('D', 8e-09, 'G', 2*T, True)]
     s2T_d = pe2T_d - pg2T_d
-    s_pred_2t = (sT_d ** 2) / s0_d
+    s_pred_2t_d = (sT_d ** 2) / s0_d if s0_d > 0 else 0
     se_2t = math.sqrt(0.5 / shots)
-    mc_diff = abs(s2T_d - s_pred_2t)
-    mc_pass = mc_diff <= 2.576 * se_2t
+    crit_2t = 2.576 * se_2t
+    mc_diff_d = abs(s2T_d - s_pred_2t_d)
+    mc_pass_d = mc_diff_d <= crit_2t
+
+    pe2T_i = cmap[('I', 8e-09, 'E', 2*T, True)]
+    pg2T_i = cmap[('I', 8e-09, 'G', 2*T, True)]
+    s2T_i = pe2T_i - pg2T_i
+    s_pred_2t_i = (sT_i ** 2) / s0_i if s0_i > 0 else 0
+    mc_diff_i = abs(s2T_i - s_pred_2t_i)
+    mc_pass_i = mc_diff_i <= crit_2t
+
+    mc_pass = mc_pass_d and mc_pass_i
 
     gate_s0 = (s0_d >= 0.85 and s0_i >= 0.85)
     gate_pg0 = (pg0_d <= 0.03 and pg0_i <= 0.03)
@@ -121,7 +131,10 @@ for b in blocks:
         "T1_D_us": float(1e6 / gamma_d) if gamma_d else None,
         "T1_I_us": float(1e6 / gamma_i) if gamma_i else None,
         "L_tau0": float(l_tau0) if l_tau0 else None,
-        "mc_diff": float(mc_diff),
+        "mc_diff_D": float(mc_diff_d),
+        "mc_pass_D": bool(mc_pass_d),
+        "mc_diff_I": float(mc_diff_i),
+        "mc_pass_I": bool(mc_pass_i),
         "mc_pass": bool(mc_pass),
         "gate_s0": bool(gate_s0),
         "gate_pg0": bool(gate_pg0),
@@ -250,12 +263,16 @@ final_report = {
     "verdict": verdict,
     "primary_metric": {
         "metric": "L(tau_0)",
-        "mean_valid": mean_val,
-        "std_valid": std_val,
-        "se_valid": se_val,
-        "p_value": p_val_val,
-        "t_statistic": t_stat_val,
-        "ci_99": ci_val,
+        "mean_valid_6blocks": mean_val,
+        "std_valid_6blocks": std_val,
+        "se_valid_6blocks": se_val,
+        "p_value_6blocks": p_val_val,
+        "t_statistic_6blocks": t_stat_val,
+        "ci_99_6blocks": ci_val,
+        "mean_pooled_8blocks": mean_all,
+        "se_pooled_8blocks": se_all,
+        "p_value_pooled_8blocks": p_val_all,
+        "ci_99_pooled_8blocks": ci_all,
         "delta_eq": delta_eq,
         "alpha": alpha,
         "n_valid_blocks": n_val,
@@ -272,9 +289,10 @@ final_report = {
     },
     "prediction_comparison": {
         "mate_predicted_L_tau0": 0.10,
-        "observed_L_tau0": mean_val,
+        "observed_L_tau0_6blocks": mean_val,
+        "observed_L_tau0_8blocks": mean_all,
         "mate_predicted_tau_mem_us": 16.0,
-        "relative_slowdown_observed_pct": float((math.exp(mean_val) - 1.0) * 100.0)
+        "relative_slowdown_observed_6blocks_pct": float((math.exp(mean_val) - 1.0) * 100.0)
     }
 }
 
@@ -284,7 +302,7 @@ with open(json_path, "wb") as f:
 
 # 7. Generate Markdown Report
 md_lines = [
-    "# Qubit-Előzményfüggés Konfirmatív Mérési Jelentés",
+    "# Qubit-Előzményfüggés Konfirmatív Mérési Jelentés (Revízió v1.1)",
     f"**Dátum (UTC):** {datetime.now(timezone.utc).isoformat()}  ",
     "**Backend:** `ibm_marrakesh` (Heron r2, 156-qubit QPU)  ",
     "**Qubitpár:** Elsődleges $q=21$, Szomszéd $q'=20$  ",
@@ -294,49 +312,63 @@ md_lines = [
     "",
     "## 1. Vezetői Összefoglaló és Végső Ítélet",
     "",
-    f"A pre-regisztrált protokoll szerint 8 független blokk (összesen 352 áramkör, 352 000 mérés, 192 másodperc tiszta QPU idő) futott le az `ibm_marrakesh` Heron processzorán.",
+    "A pre-regisztrált protokoll szerint 8 független mérési blokk (összesen 352 áramkör, 352 000 lövés, 192 másodperc tiszta QPU idő) futott le az `ibm_marrakesh` Heron r2 processzorán.",
     "",
-    f"- **Megfigyelt hatásnagyság ($L(\\tau_0)$):** $\\mathbf{{{mean_val:+.4f}}}$ ($T_{{1,D}} \\approx {1e6/np.mean([b['gamma_D'] for b in valid_blocks]):.1f}\\ \\mu\\text{{s}}$ vs $T_{{1,I}} \\approx {1e6/np.mean([b['gamma_I'] for b in valid_blocks]):.1f}\\ \\mu\\text{{s}}$, azaz **+{((math.exp(mean_val)-1)*100):.2f}%**-os relaxációs lassulás a hajtott állapotban).",
-    f"- **Statisztikai szignifikancia:** $t({n_val-1}) = {t_stat_val:.3f}, p = {p_val_val:.4f}$ (előre rögzített $\\alpha = 0.01$).",
-    f"- **99%-os Konfidenciaintervallum:** $[{ci_val[0]:+.4f}, {ci_val[1]:+.4f}]$.",
-    f"- **Ekvivalenciasáv:** $[-\\delta_{{\\text{{eq}}}}, +\\delta_{{\\text{{eq}}}}] = [{-delta_eq:.3f}, {+delta_eq:.3f}]$.",
-    f"- **Döntés:** Mivel a p-érték nem érte el a szigorú $\\alpha = 0.01$-et, és a 99%-os felső konfidenciahatár (${ci_val[1]:+.4f}$) kissé átnyúlik a $\\delta_{{\\text{{eq}}}} = {delta_eq}$ sávon, a formális ítélet **`{verdict}`** (nem zárható ki sem az enyhe pozitív hatás, sem a szinte tökéletesen markovi reset).",
+    "### Fő Eredmény: Relaxációs Lecsengési Ráta ($L(\\tau_0)$)",
+    f"- **6 Szigorúan Érvényes Blokk (D és I 2T modellpróbával):** $\\bar{{L}} = {mean_val:+.4f} \\pm {se_val:.4f}$ ($t({n_val-1}) = {t_stat_val:.3f}, p = {p_val_val:.4f}$, $99\\%\\text{{ CI}} = [{ci_val[0]:+.4f}, {ci_val[1]:+.4f}]$).",
+    f"- **Mind a 8 Blokk Összesítve:** $\\bar{{L}} = {mean_all:+.4f} \\pm {se_all:.4f}$ ($t(7) = {t_stat_all:.3f}, p = {p_val_all:.4f}$, $99\\%\\text{{ CI}} = [{ci_all[0]:+.4f}, {ci_all[1]:+.4f}]$).",
+    f"- **Döntés:** A p-értékek ($p = {p_val_val:.2f}$ és $p = {p_val_all:.2f}$) jóval meghaladják az előre rögzített $\\alpha = 0.01$-es küszöböt. Mivel a 99%-os konfidenciaintervallumok átfedik a null-hipotézist ($0.00$) és a $+10\\%$-os jóslatot is, a statisztikai ítélet egyértelműen **`{verdict}`**.",
     "",
     "---",
     "",
-    "## 2. Blokkonkénti Eredmények és Érvényességi Kapuk",
+    "## 2. Kulcs Mellékeredmény: Szignifikáns Resetmaradék-Eltérés (S5)",
     "",
-    "| Blokk | Job ID | $S(0)_D$ | $P_G(0)_D$ | $T_{1,D}\\ (\\mu\\text{s})$ | $T_{1,I}\\ (\\mu\\text{s})$ | $L(\\tau_0)$ | Modell-hiba (2T) | Kapu Állapot |",
-    "|---|---|---|---|---|---|---|---|---|"
+    "Miközben a relaxációs ráta eltérése nem érte el a szignifikanciát, a pre-regisztrált **S5 másodlagos teszt** határozott, szignifikáns fizikai eltérést mutatott ki a reset utáni alapállapot gerjesztettségében:",
+    "",
+    f"- **Hajtott kar ($D$) resetmaradéka ($P_G(0)$):** átlagosan **~0.53%** ($0.0053$).",
+    f"- **Üresjárati kar ($I$) resetmaradéka ($P_G(0)$):** átlagosan **~0.10%** ($0.0010$).",
+    f"- **Eltérés ($\\Delta P_G(0)$):** átlagosan **+{np.mean(diff_pg0)*100:.2f}%** ($p = 0.00051$).",
+    "- **Holm-Bonferroni korrekció:** A korrigált küszöb $\\alpha_{{\\text{{adj}}}} = 0.0025$. Mivel $p = 0.00051 < 0.0025$, a különbség **statisztikailag szignifikáns**.",
+    "",
+    "> **Fizikai Következtetés:** A reset előtti periodikus hajtás statisztikailag igazolható nyomot hagy a qubitben: a reset hatékonysága csökken, a visszamaradó gerjesztett populáció ~5-szörösére növekszik. Ez előzményfüggés a reset folyamatában, nem pedig a reset utáni szabad relaxáció lassulása.",
+    "",
+    "---",
+    "",
+    "## 3. Blokkonkénti Eredmények és Kapu-Audit",
+    "",
+    "| Blokk | Job ID | $S(0)_D$ | $S(0)_I$ | $P_G(0)_D$ | $P_G(0)_I$ | $L(\\tau_0)$ | MC Diff $D$ | MC Diff $I$ | Kapu Állapot |",
+    "|---|---|---|---|---|---|---|---|---|---|",
 ]
 
+crit_mc = 2.576 * math.sqrt(0.5 / 1000)
 for b in gate_results:
     st_str = "ÉRVÉNYES" if b["valid"] else "HULLOTT (MC)"
     md_lines.append(
-        f"| {b['block']} | `{b['job_id']}` | {b['s0_D']:.4f} | {b['pg0_D']:.4f} | {b['T1_D_us']:.1f} | {b['T1_I_us']:.1f} | {b['L_tau0']:+.4f} | {b['mc_diff']:.4f} | **{st_str}** |"
+        f"| {b['block']} | `{b['job_id']}` | {b['s0_D']:.4f} | {b['s0_I']:.4f} | {b['pg0_D']:.4f} | {b['pg0_I']:.4f} | {b['L_tau0']:+.4f} | {b['mc_diff_D']:.4f} | {b['mc_diff_I']:.4f} | **{st_str}** |"
     )
 
 md_lines.extend([
     "",
+    f"*Megjegyzés a modellpróbához:* A kritikus küszöb $2.576 \\times \\sqrt{{0.5 / 1000}} = {crit_mc:.4f}$.",
+    "- A **6. blokk** az $I$-kar $2T$ modellpróbáján hullott el ($0.0602 > 0.0576$).",
+    "- A **7. blokk** a $D$-kar $2T$ modellpróbáján hullott el ($0.0628 > 0.0576$).",
+    "- A maradék **6 blokk** (0–5) mindkét karon szigorúan átment, teljesítve a pre-regisztráció minimum követelményét ($\\ge 6$).",
+    "",
     "---",
     "",
-    "## 3. Kondicionáló Karok Összehasonlítása",
+    "## 4. Kondicionáló Karok és Jóslatok Helyzete",
     "",
     f"- **Periodikus hajtás ($D$):** $\\bar{{L}} = {mean_all:+.4f} \\pm {se_all:.4f}$",
     f"- **Gyorsított hajtás ($D_{{\\text{{fast}}}}$):** $\\bar{{L}} = {np.mean(l_df):+.4f}$",
     f"- **Szomszéd hajtás ($Nb$):** $\\bar{{L}} = {np.mean(l_nb):+.4f}$",
     "- **Üresjárat ($I$):** $0.0000$ (referencia)",
     "",
-    "A fizikai hierarchia szigorúan monoton: $\\bar{L}(D) > \\bar{L}(D_{\\text{fast}}) > \\bar{L}(Nb) > 0$. Ez konzisztens azzal, hogy a közvetlen qubit-meghajtás okozza a legnagyobb kimutatható relaxációs perturbációt.",
+    "**Módszertani Megjegyzés:** Bár a pontbecslések számszaki sorrendje $\\bar{L}(D) > \\bar{L}(D_{\\text{fast}}) > \\bar{L}(Nb) > 0$, az egymást átfedő hibahatárok miatt ez pusztán tapasztalati tendencia, nem igazolt fizikai hierarchia.",
     "",
-    "---",
-    "",
-    "## 4. Összevetés Máté Előzetes Jóslatával",
-    "",
-    f"- **Máté numerikus jóslata:** $L(\\tau_0) = +0.10$ ($\approx +10.5\\%$ relaxációs időnövekedés)",
-    f"- **Mért empirikus érték:** $L(\\tau_0) = {mean_val:+.4f}$ ($\approx +{((math.exp(mean_val)-1)*100):.2f}\\%$ relaxációs időnövekedés)",
-    "- **Irány (Sign):** **POZITÍV** (8-ból 6 blokkban $T_{1,D} > T_{1,I}$), megerősíti Máté intuitív fizikai irányát (a periodikus meghajtás nem rontja, hanem kismértékben növeli a relaxációs időt — pl. TLS telítés révén).",
-    "- **Nagyságrend (Magnitude):** A hatás az elméletileg vártnál finomabb (~2.3% vs ~10%)."
+    "**Jóslat-összevetés:**",
+    f"- Máté jóslata ($L = +0.10$) és a null-hipotézis ($L = 0.00$) egyaránt a 99%-os konfidenciaintervallumon ($[{ci_val[0]:+.4f}, {ci_val[1]:+.4f}]$) belül helyezkedik el.",
+    "- A jelenlegi adatmennyiség mellett a 10%-os hatás sem zárható ki, de nem is igazolt.",
+    r"- A kísérlet valódi, statisztikailag tartható előzményfüggő hatása a **resetmaradékban ($\Delta P_G(0)$)** mutatkozott meg."
 ])
 
 md_path = RESULTS_DIR / "CONFIRMATORY_REPORT.md"
