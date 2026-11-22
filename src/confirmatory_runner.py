@@ -26,7 +26,7 @@ from circuit_builder import CircuitBuilder, TimingSpec
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = REPO_ROOT / "data"
 PREREG_DIR = REPO_ROOT / "prereg"
-TOKEN_PATH = Path(r"C:\Users\mater\Downloads\apikey (2) (1).json")
+TOKEN_PATH = Path(r"C:\Users\mater\Downloads\apikey (6).json")
 
 def normalize_bytes(data: bytes) -> bytes:
     return data.replace(b"\r\n", b"\n")
@@ -63,7 +63,7 @@ def get_service():
         return QiskitRuntimeService(channel="ibm_quantum_platform", token=token, instance="open-instance")
     return QiskitRuntimeService(channel="ibm_quantum_platform")
 
-def run_confirmatory(num_blocks: int = 8, shots_per_circ: int = 2500, dry_run: bool = True):
+def run_confirmatory(num_blocks: int = 8, shots_per_circ: int = 2500, dry_run: bool = True, start_block: int = 0):
     verify_frozen_hashes()
 
     snapshot_path = DATA_DIR / "target_snapshot_ibm_marrakesh.json"
@@ -135,10 +135,11 @@ def run_confirmatory(num_blocks: int = 8, shots_per_circ: int = 2500, dry_run: b
         return
 
     submitted_jobs = []
-    print(f"\nEXECUTING CONFIRMATORY CAMPAIGN: Submitting {num_blocks} blocks...")
+    total_blocks_target = start_block + num_blocks
+    print(f"\nEXECUTING CONFIRMATORY CAMPAIGN: Submitting {num_blocks} blocks (indices {start_block} to {total_blocks_target - 1})...")
 
-    for b in range(num_blocks):
-        print(f"\n--- Submitting Block {b+1}/{num_blocks} ---")
+    for b in range(start_block, total_blocks_target):
+        print(f"\n--- Submitting Block {b+1}/{total_blocks_target} (index {b}) ---")
         job = sampler.run(isa_circuits)
         job_id = job.job_id()
         sub_time = datetime.now(timezone.utc).isoformat()
@@ -180,7 +181,8 @@ def run_confirmatory(num_blocks: int = 8, shots_per_circ: int = 2500, dry_run: b
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Confirmatory Campaign Submission")
     parser.add_argument("--blocks", type=int, default=8, help="Number of blocks (default: 8)")
+    parser.add_argument("--start-block", type=int, default=0, help="Starting block index (default: 0)")
     parser.add_argument("--shots", type=int, default=2500, help="Shots per circuit (default: 2500)")
     parser.add_argument("--submit", action="store_true", help="Submit live jobs to QPU")
     args = parser.parse_args()
-    run_confirmatory(num_blocks=args.blocks, shots_per_circ=args.shots, dry_run=not args.submit)
+    run_confirmatory(num_blocks=args.blocks, shots_per_circ=args.shots, dry_run=not args.submit, start_block=args.start_block)
