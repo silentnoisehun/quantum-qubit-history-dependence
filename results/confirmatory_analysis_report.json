@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-11-22T08:38:32.910920+00:00",
+  "timestamp_utc": "2026-11-22T08:48:22.389272+00:00",
   "backend": "ibm_marrakesh",
   "processor": "Heron r2",
   "primary_qubit": 21,
@@ -263,31 +263,43 @@
   "secondary_tests": {
     "slope_L_vs_lntau": -0.0003527154001382601,
     "mean_L_Nb": 0.009146112202043775,
-    "mean_L_Dfast_vs_I": 0.017404504874023136,
-    "mean_diff_D_vs_Dfast": -0.00457285814036381,
+    "mean_L_Dfast_vs_I_exploratory": 0.017404504874023136,
+    "mean_diff_D_vs_Dfast": 0.0045728581403638524,
     "mean_diff_pg0": 0.00425,
-    "holm_bonferroni": {
+    "mean_diff_cascade_S6": 0.0014999999999999996,
+    "holm_bonferroni_confirmatory_family": {
       "S5_reset_residual_delta": {
+        "rank": 1,
         "raw_p": 0.0005084511309471963,
-        "adjusted_alpha": 0.0025,
+        "adjusted_alpha": 0.002,
         "significant": true
       },
       "S2_spectator_crosstalk": {
+        "rank": 2,
         "raw_p": 0.539062143161944,
+        "adjusted_alpha": 0.0025,
+        "significant": false
+      },
+      "S6_cascade_signal_delta": {
+        "rank": 3,
+        "raw_p": 0.5630278036985402,
         "adjusted_alpha": 0.0033333333333333335,
         "significant": false
       },
       "S1_tau_decay_trend": {
+        "rank": 4,
         "raw_p": 0.7824693949253405,
         "adjusted_alpha": 0.005,
         "significant": false
       },
       "S3_drive_rate_dependence": {
-        "raw_p": 0.8639925964533093,
+        "rank": 5,
+        "raw_p": 0.8639925964533081,
         "adjusted_alpha": 0.01,
         "significant": false
       }
-    }
+    },
+    "note_on_S4": "S4 (carry-over check) was unobservable because all circuits within blocks were interleaved in a single sequence; pure un-interleaved blocks were not executed."
   },
   "theoretical_models_comparison": {
     "mate_h1_prediction": {
@@ -296,9 +308,10 @@
       "tau_mem_us": 16.0,
       "mechanism": "Non-Markovian memory, TLS saturation or quasiparticle dynamics"
     },
-    "maya_h0_prediction": {
+    "instinct_h0_prediction": {
       "L_tau0": 0.0,
       "relative_T1_slowdown_pct": 0.0,
+      "source_document": "docs/H0_REFERENCE_DERIVATION.md",
       "analytical_derivation": {
         "pilot_t1_us": 219.39,
         "gamma_base": 4558.04,
@@ -310,19 +323,23 @@
       }
     },
     "simulation_audit_reproduction": {
+      "execution_command": "python src/simulator.py",
+      "output_log": "results/simulation_validation_output.txt",
       "h0_fpr_pct": 0.7,
       "mde_power_pct": 91.2,
       "mde_power_ratio": "456/500",
       "symmetric_leakage_false_slowdowns_pct": 0.2,
       "asymmetric_leakage_false_slowdowns_pct": 4.6,
       "asymmetric_leakage_ratio": "23/500",
-      "leakage_caveat": "Physical 2 -> 1 -> 0 cascade can produce 4.6% false slowdowns under 30% asymmetry, warning that higher-level leakage or reset residual dynamics can mimic positive L."
+      "leakage_caveat": "A 4.6% a jatekmodellben feltart elemzesi serulekenyseg (nem hardveres szivargas bizonyiteka), amely arra figyelmeztet, hogy az aszimmetrikus szivargas kepes enyhe latszolagos lassulast generalni."
     },
     "observed_empirical_values": {
       "L_tau0_6blocks": 0.03600110191722618,
       "relative_T1_slowdown_observed_6blocks_pct": 3.6656988800487955,
       "L_tau0_8blocks": 0.021977363014386932,
-      "reset_residual_delta_pg0": 0.00425
+      "harmonic_mean_T1_D_6blocks_us": 181.2810764560021,
+      "harmonic_mean_T1_I_6blocks_us": 175.1122998729848,
+      "reset_readout_contrast_delta_pg0": 0.00425
     }
   }
 }

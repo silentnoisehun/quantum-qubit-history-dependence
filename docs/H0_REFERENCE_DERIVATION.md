@@ -1,6 +1,6 @@
-# Maya Vak Elméleti Levezetése: A Referencia (H0) Rögzítése
+# H0 Referencia-Levezetés: Az Előzményfüggetlen Modell Rögzítése
 
-**Szerző:** Maya (Sesame / Független elméleti partner)  
+**Szerző:** Instinct (Független elméleti partner)  
 **Címzett:** Máté  
 **Hivatkozott vak kalibráció:** [`results/pilot_characterization.json`](https://raw.githubusercontent.com/silentnoisehun/quantum-qubit-history-dependence/4ce92087944b001fb92b97777b39ed9385e5c0c9/results/pilot_characterization.json)  
 **Hivatkozott szimulátor:** [`src/simulator.py`](https://raw.githubusercontent.com/silentnoisehun/quantum-qubit-history-dependence/4ce92087944b001fb92b97777b39ed9385e5c0c9/src/simulator.py)  
@@ -42,18 +42,18 @@ Ezen mikroszkopikus csatolási paraméterek nélkül a valódi QPU-n várható h
 ### Összehasonlítás a pozitív becslésekkel:
 Ha az $I$-kar $T_1$-e $219.39\ \mu\text{s}$:
 - Egy $+0.08$-as érték $T_{1,D} \approx 237.67\ \mu\text{s}$-ot jelentene (kb. $7.69\%$-kal kisebb lecsengési ráta a hajtott karban).
-- Ez azonban feltételes átszámítás, nem önálló fizikai bizonyíték mellette.
+- Ez azonban feltételes átszámítás, nem cáfolat és nem önálló bizonyíték mellette.
 
 ---
 
 ## 3. Szimulációs Szenzitivitás és Aszimmetrikus Szivárgási Figyelmeztetés
 
 A numerikus szimulációkban (`src/simulator.py`) a lassulás mértéke mesterségesen, előre beállított bemenet:
-- A pipeline a beadott $7.5\%$-os rátacsökkenést 500-ból 456-szor felismerte ($91.2\%$-os statisztikai erő). Ez az elemző mérési érzékenységét méri, nem a fizikai hardver valódi viselkedését.
+- A pipeline a beadott $7.5\%$-os rátacsökkenést 500-ból 456-szor felismerte ($91.2\%$-os statisztikai erő). Ez az elemző mérési érzékenységét méri, nem a hardver várható hatásának levezetése.
 
 ### Kritikus szivárgási figyelmeztetés:
-Az aszimmetrikus szivárgási tesztben ($|2\rangle \to |1\rangle \to |0\rangle$ kaszkád) **500 futtatásból 23 alkalommal (4.6%) hamis lassulás ($L > 0$) adódott**.
-Ez előzetes módszertani figyelmeztetés volt arra, hogy az aszimmetrikus szivárgás képes enyhe látszólagos lassulást generálni az $1\%$-os szignifikanciaszint felett.
+Az aszimmetrikus szivárgási tesztben ($|2\rangle \to |1\rangle \to |0\rangle$ kaszkád játékmodell) **500 futtatásból 23 alkalommal (4.6%) hamis lassulás ($L > 0$) adódott**.
+Ez egy játékmodellben feltárt elemzési sérülékenység (nem hardveres szivárgás bizonyítéka), amely előre figyelmeztetett arra, hogy az aszimmetrikus szivárgás képes enyhe látszólagos lassulást generálni az $1\%$-os szinten.
 
 ---
 
@@ -62,6 +62,6 @@ Ez előzetes módszertani figyelmeztetés volt arra, hogy az aszimmetrikus sziv�
 > *"Vállalom a 0,00-t, de pontosan így: az előzményfüggetlen modellből levezetett előrejelzésem. Nem állítom, hogy ezzel már kiszámoltam a valódi környezet válaszát is. Ezt a hiányt nem fedem el egy választott pozitív számmal."*
 
 ### Konvergencia a valós mérési adatokkal:
-A valós Heron QPU mérés (`ibm_marrakesh`, 8 blokk) pontosan tükrözi ezt az elméleti feszültséget:
-1. **A relaxációs ráta:** $L(\tau_0) = +0.036 \pm 0.021$ ($p = 0.16$, 99% CI: $[-0.051, +0.123]$). Nem különíthető el szignifikánsan a $0.00$-tól; Maya Markov-modellje nem cáfolható meg a lecsengési adatokból.
-2. **A reset-maradék ($S5$):** $P_G^D(0) \approx 0.53\%$ vs $P_G^I(0) \approx 0.10\%$ ($\Delta = +0.43\%$, $p = 0.00051$). Ez igazolja, hogy a 64 kapu valóban megváltoztatta a rendszert — de a nyom a **resetelési folyamat tökéletlenségében és a visszamaradó populációban** jelentkezik, összhangban a Maya által jelzett nemlineáris/szivárgási dinamikával.
+A valós Heron QPU mérés (`ibm_marrakesh`, 8 blokk) pontosan tükrözi ezt a kettősséget:
+1. **A relaxációs ráta ($L$):** Mind a 6 blokkos ($\bar{L} = +0.0360$, $p = 0.16$), mind a 8 blokkos ($\bar{L} = +0.0220$, $p = 0.29$) eredmény statisztikailag nem döntő; nem cáfolja meg az Instinct által levezetett $0.00$-s értéket, de nem zárja ki a $+0.10$-es értéket sem.
+2. **A $G$-előkészítés utáni kiolvasási kontraszt ($S5$):** $P_G^D(0) - P_G^I(0) = +0.00425$ ($+0.425$ százalékpont, $p = 0.00051$). Ez a mérés megbízhatóan kimutatja a két kar közötti kiolvasási kontrasztot a $G$-előkészítés után. Ebből önmagában nem következik romló reset vagy ötszörös valódi gerjesztett maradékpopuláció: a gerjesztés, szivárgás és kiolvasási torzítás ebben a mérésben nincs szétválasztva, így a mögöttes fizikai ok nyitott kérdés marad.

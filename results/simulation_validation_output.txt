@@ -1,0 +1,20 @@
+============================================================
+STAGE 1: NULL-CALIBRATION VALIDATION (H0)
+Simulating 1000 campaigns under H0 with 5% interblock T1 drift...
+Verdicts under H0: {'NULL': 803, 'ELOZMENY-LASSIT': 2, 'ELOZMENY-GYORSIT': 5, 'NEM DONTO': 183, 'ERVENYTELEN': 7}
+False Positive Rate (FPR): 0.70% (Target: <= 1.0% + binomial noise)
+
+============================================================
+STAGE 2: INJECTED EFFECT POWER VALIDATION (MDE)
+Simulating 500 campaigns with injected 7.5% relaxation slowdown...
+Statistical Power (Sensitivity) at 7.5% effect: 91.20% (Target: >= 80.0%)
+
+============================================================
+STAGE 3: LEAKAGE TRAP VALIDATION (Physical 2 -> 1 -> 0 cascade)
+Simulating 500 campaigns with 5% |2> state leakage in D arm...
+Symmetric leakage false slowdowns: 0.20% (S(t) cancels cascade)
+Asymmetric leakage safely contained (NULL/ERVENYTELEN): 95.40%
+
+============================================================
+ALL THREE PRE-REGISTRATION VALIDATIONS PASSED PERFECTLY!
+============================================================
