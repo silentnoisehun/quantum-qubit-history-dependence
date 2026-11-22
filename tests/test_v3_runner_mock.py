@@ -208,6 +208,7 @@ class TestV3RunnerMock(unittest.TestCase):
         mock_job = MagicMock()
         mock_job.status.return_value = "DONE"
         mock_job.result.return_value = mock_pub_results
+        mock_job.usage.return_value = {"usage_seconds": 6, "quantum_seconds": 6}
         mock_service.job.return_value = mock_job
 
         result = v3_runner.fetch_session_result(0, service=mock_service)
@@ -309,8 +310,10 @@ class TestV3RunnerMock(unittest.TestCase):
         mock_results[0].data.c.get_counts.return_value = {"1": 10, "0": 489}
 
         out_path = TEST_DATA_DIR / "session_00_corrupt_result.json"
+        mock_job = MagicMock()
+        mock_job.usage.return_value = {"usage_seconds": 6}
         with self.assertRaises(ValueError) as ctx:
-            v3_runner.save_and_verify_session_result(0, mock_results, meta, out_path)
+            v3_runner.save_and_verify_session_result(0, mock_results, mock_job, meta, out_path)
         self.assertIn("shot mismatch", str(ctx.exception))
         self.assertFalse(out_path.exists())
 
@@ -346,6 +349,150 @@ class TestV3RunnerMock(unittest.TestCase):
         self.assertTrue(camp_res.all_evaluable)
         self.assertIsNotNone(camp_res.mean_L)
         self.assertTrue((TEST_DATA_DIR / "v3_l_measurement_report.json").exists())
+
+    # -------------------------------------------------------------------------
+    # 10. Crash Recovery: Unreconciled Intent Halts Without Re-Submission
+    # -------------------------------------------------------------------------
+    def test_10_unreconciled_intent_halts_without_resubmission(self):
+        mock_service = self.get_mock_service()
+        mock_backend = self.get_mock_backend()
+        mock_service.jobs.return_value = []  # No jobs found on remote backend
+
+        # Simulate crash: intent exists, meta does not
+        intent_path = TEST_DATA_DIR / "session_00_intent.json"
+        with open(intent_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "session_id": 0, "intent_created_at_utc": datetime.now(timezone.utc).isoformat(),
+                "status": "INTENT_DECLARED"
+            }, f)
+
+        with patch("v3_runner.SamplerV2") as mock_sampler_cls:
+            mock_sampler = MagicMock()
+            mock_sampler_cls.return_value = mock_sampler
+
+            with self.assertRaises(RuntimeError) as ctx:
+                v3_runner.submit_session(
+                    session_id=0,
+                    approval_token=self.test_token,
+                    enforce_schedule=False,
+                    service=mock_service,
+                    backend=mock_backend
+                )
+            self.assertIn("UNRECONCILED INTENT", str(ctx.exception))
+            # Critical: must NOT have called sampler.run again
+            mock_sampler.run.assert_not_called()
+
+    # -------------------------------------------------------------------------
+    # 11. Crash Recovery: Reconciled Intent Recovers Job ID
+    # -------------------------------------------------------------------------
+    def test_11_reconciled_intent_recovers_job(self):
+        mock_service = self.get_mock_service()
+        mock_backend = self.get_mock_backend()
+
+        now_utc = datetime.now(timezone.utc)
+        intent_path = TEST_DATA_DIR / "session_00_intent.json"
+        with open(intent_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "session_id": 0, "intent_created_at_utc": now_utc.isoformat(),
+                "session_info": {"circuit_execution_order": []},
+                "circuits_catalog": {}, "shots": 10000,
+                "status": "INTENT_DECLARED"
+            }, f)
+
+        # Mock remote job that was successfully submitted right before the crash
+        mock_job = MagicMock()
+        mock_job.job_id.return_value = "recovered_job_id_xyz"
+        mock_job.creation_date = now_utc + timedelta(seconds=2)
+        mock_service.jobs.return_value = [mock_job]
+
+        with patch("v3_runner.SamplerV2") as mock_sampler_cls:
+            mock_sampler = MagicMock()
+            mock_sampler_cls.return_value = mock_sampler
+
+            reconciled = v3_runner.submit_session(
+                session_id=0,
+                approval_token=self.test_token,
+                enforce_schedule=False,
+                service=mock_service,
+                backend=mock_backend
+            )
+            self.assertEqual(reconciled["job_id"], "recovered_job_id_xyz")
+            self.assertEqual(reconciled["status"], "RECOVERED_FROM_INTENT")
+            # Must NOT call sampler.run again
+            mock_sampler.run.assert_not_called()
+            # Meta file now exists
+            self.assertTrue((TEST_DATA_DIR / "session_00_meta.json").exists())
+
+    # -------------------------------------------------------------------------
+    # 12. Instance Mismatch Halts Fail-Closed
+    # -------------------------------------------------------------------------
+    def test_12_instance_mismatch_blocks_submission(self):
+        mock_service = self.get_mock_service()
+        mock_backend = self.get_mock_backend()
+        # Infiltrate a paid/different instance ID
+        mock_service.usage.return_value = {
+            "usage_consumed_seconds": 10,
+            "usage_remaining_seconds": 500,
+            "usage_limit_reached": False,
+            "instance_id": "crn:v1:bluemix:public:quantum-computing:us-east:a/premium_paid_instance_xyz"
+        }
+
+        with patch("v3_runner.SamplerV2") as mock_sampler_cls:
+            mock_sampler = MagicMock()
+            mock_sampler_cls.return_value = mock_sampler
+
+            with self.assertRaises(RuntimeError) as ctx:
+                v3_runner.submit_session(
+                    session_id=0,
+                    approval_token=self.test_token,
+                    enforce_schedule=False,
+                    service=mock_service,
+                    backend=mock_backend
+                )
+            self.assertIn("Instance mismatch", str(ctx.exception))
+            mock_sampler.run.assert_not_called()
+
+    # -------------------------------------------------------------------------
+    # 13. Rapid Catch-Up & Duplicate Job Detection
+    # -------------------------------------------------------------------------
+    def test_13_rapid_catchup_and_duplicate_job_detection(self):
+        mock_service = self.get_mock_service()
+        mock_backend = self.get_mock_backend()
+
+        # Session 0 submitted 10 minutes ago
+        s0_sub_time = datetime.now(timezone.utc) - timedelta(minutes=10)
+        with open(TEST_DATA_DIR / "session_00_meta.json", "w", encoding="utf-8") as f:
+            json.dump({
+                "session_id": 0, "job_id": "job_0",
+                "submitted_at_utc": s0_sub_time.isoformat(),
+                "status": "SUBMITTED"
+            }, f)
+        with open(TEST_DATA_DIR / "session_00_result.json", "w", encoding="utf-8") as f:
+            json.dump({"session_id": 0, "job_id": "job_0", "counts": {}}, f)
+
+        # Attempt to submit Session 1 immediately (only 10 min elapsed < 45 min)
+        with patch("v3_runner.SamplerV2") as mock_sampler_cls:
+            mock_sampler = MagicMock()
+            mock_sampler_cls.return_value = mock_sampler
+
+            with self.assertRaises(RuntimeError) as ctx:
+                v3_runner.submit_session(
+                    session_id=1,
+                    approval_token=self.test_token,
+                    enforce_schedule=True,
+                    service=mock_service,
+                    backend=mock_backend
+                )
+            self.assertIn("Rapid catch-up prohibited", str(ctx.exception))
+            mock_sampler.run.assert_not_called()
+
+        # Test duplicate job ID detection in analyze_full_campaign
+        with open(TEST_DATA_DIR / "session_01_result.json", "w", encoding="utf-8") as f:
+            # Reusing job_0 from session 0
+            json.dump({"session_id": 1, "job_id": "job_0", "counts": {}}, f)
+        with self.assertRaises(ValueError) as ctx2:
+            v3_runner.analyze_full_campaign()
+        self.assertIn("DUPLICATE JOB ID DETECTED", str(ctx2.exception))
 
 if __name__ == "__main__":
     unittest.main()

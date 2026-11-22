@@ -2,28 +2,28 @@
 """
 v3_runner.py — Strict Fail-Closed Execution Runner for L-Measurement v3.
 
-Full compliance with peer-review points 1–6:
-1. Complete typing imports (Tuple, Dict, Any, List, Optional).
-2. Uses SamplerV2(mode=backend), explicitly configures:
+Full compliance with peer-review points:
+1. Submission Intent & Crash Recovery:
+   - Persists session_{id:02d}_intent.json BEFORE calling sampler.run().
+   - If intent exists without meta on rerun, halts to prevent duplicate submission
+     and attempts to reconcile against IBM service jobs.
+2. Explicit Instance Verification:
+   - Binds strictly to open-instance; displays and validates active instance ID.
+3. Timing Separation & Unique Session/Job Invariants:
+   - Enforces min 45 min gap between consecutive session submissions.
+   - Enforces expiration window (120 min).
+   - Verifies session_id in files and strict uniqueness of all 16 job IDs.
+4. Dynamic Quota Tracking:
+   - Fetches actual job usage on result retrieval (j.usage()) and tracks cumulative QPU seconds.
+5. SamplerV2(mode=backend) with explicit execution options:
    - execution.init_qubits = True
    - execution.rep_delay = 0.00025 (250 us)
    - dynamical_decoupling.enable = False
-   - twirling.enable_gates = False
-   - twirling.enable_measure = False
-3. Mandatory ISA Hash Verification: Transpiled ISA circuits are checked against
-   results/v3_transpiler_audit_report.json before submission; mismatch halts fail-closed.
-4. Strict Sequential & Time-Window Enforcement:
-   - Session k requires Session k-1 to be completed and verified.
-   - Enforces scheduled UTC time window.
-5. Idempotent Job Tracking & Read-Only Fetch:
-   - Persists metadata and raw counts under data/v3_sessions/.
-   - Checking/fetching existing jobs requires NO approval token.
-   - Verifies circuit labels and shot counts on result retrieval.
-6. Approval Gate & Quota Verification:
-   - External approval hash from environment (V3_APPROVAL_TOKEN_HASH); no self-authorization.
-   - Live quota queried via service.usage() before submission.
-7. Full 16-session Analysis Workflow:
-   - --analyze generates final reports only when all 16 sessions are complete.
+   - twirling.enable_gates = False, twirling.enable_measure = False
+6. Mandatory ISA Hash Verification:
+   - Transpiled ISA circuits are strictly matched against results/v3_transpiler_audit_report.json.
+7. External Approval Gate:
+   - Requires V3_APPROVAL_TOKEN_HASH in environment; no ambient self-authorization.
 """
 
 import argparse
@@ -32,7 +32,7 @@ import json
 import os
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 
@@ -54,6 +54,10 @@ RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 TOKEN_PATH = Path(r"C:\Users\mater\Downloads\apikey (6).json")
 
+# Mandatory expected open instance
+EXPECTED_INSTANCE = "open-instance"
+EXPECTED_OPEN_CRN_SUBSTR = "open"
+
 # External approval hash must be supplied via environment variable; no hardcoded backdoor token.
 # To authorize, Máté and Instinct set $env:V3_APPROVAL_TOKEN_HASH = "<sha256_of_their_secret_approval_statement>"
 ENV_APPROVAL_HASH_KEY = "V3_APPROVAL_TOKEN_HASH"
@@ -64,8 +68,8 @@ def get_service():
         with open(TOKEN_PATH, encoding="utf-8") as f:
             token = json.load(f)["apikey"]
     if token:
-        return QiskitRuntimeService(channel="ibm_quantum_platform", token=token, instance="open-instance")
-    return QiskitRuntimeService(channel="ibm_quantum_platform")
+        return QiskitRuntimeService(channel="ibm_quantum_platform", token=token, instance=EXPECTED_INSTANCE)
+    return QiskitRuntimeService(channel="ibm_quantum_platform", instance=EXPECTED_INSTANCE)
 
 def verify_approval_token(token: Optional[str]) -> bool:
     expected_hash = os.environ.get(ENV_APPROVAL_HASH_KEY)
@@ -77,13 +81,19 @@ def verify_approval_token(token: Optional[str]) -> bool:
 def check_live_quota(service, estimated_seconds_needed: float) -> Tuple[bool, Dict[str, Any], str]:
     try:
         usage = service.usage()
+        inst_id = usage.get("instance_id", "")
         rem_sec = usage.get("usage_remaining_seconds", 0)
         limit_reached = usage.get("usage_limit_reached", False)
+
+        # Instance verification: ensure we are operating on the open instance
+        if EXPECTED_OPEN_CRN_SUBSTR not in inst_id.lower() and "crn" in inst_id.lower():
+            return False, usage, f"Instance mismatch: active instance '{inst_id}' does not appear to be {EXPECTED_INSTANCE}!"
+
         if limit_reached:
             return False, usage, "Usage limit already reached on IBM Quantum account."
         if rem_sec < estimated_seconds_needed:
             return False, usage, f"Insufficient quota: {rem_sec}s remaining < {estimated_seconds_needed:.1f}s required."
-        return True, usage, f"Quota OK: {rem_sec}s remaining (requires ~{estimated_seconds_needed:.1f}s)."
+        return True, usage, f"Quota OK: {rem_sec}s remaining on {EXPECTED_INSTANCE} (requires ~{estimated_seconds_needed:.1f}s)."
     except Exception as e:
         return False, {}, f"Failed to query live quota: {e}"
 
@@ -149,25 +159,42 @@ def check_session_prerequisites(
     manifest: Dict[str, Any],
     enforce_schedule: bool = True
 ) -> Tuple[bool, str]:
+    now_dt = datetime.now(timezone.utc)
+
     # 1. Sequential prerequisite: session k-1 must be completed and retrieved
     if session_id > 0:
         prev_result_file = V3_DATA_DIR / f"session_{session_id - 1:02d}_result.json"
+        prev_meta_file = V3_DATA_DIR / f"session_{session_id - 1:02d}_meta.json"
         if not prev_result_file.exists():
             return False, f"Prerequisite error: Previous session {session_id - 1} result is not yet retrieved ({prev_result_file})."
+        
+        # Timing separation rule: minimum 45 minutes between subsequent session submissions
+        if enforce_schedule and prev_meta_file.exists():
+            with open(prev_meta_file, encoding="utf-8") as f:
+                prev_meta = json.load(f)
+            prev_sub_dt = datetime.fromisoformat(prev_meta["submitted_at_utc"])
+            elapsed_min = (now_dt - prev_sub_dt).total_seconds() / 60.0
+            min_gap = manifest.get("timing_separation_rules", {}).get("min_actual_interval_minutes", 45)
+            if elapsed_min < min_gap:
+                return False, f"Rapid catch-up prohibited: only {elapsed_min:.1f} minutes elapsed since Session {session_id - 1} submission (min {min_gap} min required)."
 
     # 2. Schedule window check
     if enforce_schedule:
         s_info = manifest["sessions"][session_id]
         sched_dt = datetime.fromisoformat(s_info["scheduled_time_utc"])
-        now_dt = datetime.now(timezone.utc)
+        latest_allowed = datetime.fromisoformat(s_info.get("latest_allowed_time_utc", (sched_dt + timedelta(minutes=120)).isoformat()))
         if now_dt < sched_dt:
             diff_sec = (sched_dt - now_dt).total_seconds()
             return False, f"Schedule window error: Session {session_id} is scheduled for {sched_dt.isoformat()}, {diff_sec:.0f}s in the future."
+        if now_dt > latest_allowed:
+            return False, f"Session window expired: current time {now_dt.isoformat()} > latest allowed {latest_allowed.isoformat()}."
+
     return True, "Prerequisites satisfied."
 
 def save_and_verify_session_result(
     session_id: int,
     res: Any,
+    job: Any,
     meta: Dict[str, Any],
     out_path: Path
 ) -> Dict[str, Any]:
@@ -184,7 +211,6 @@ def save_and_verify_session_result(
         zeros = data.get("0", 0)
         tot = ones + zeros
         
-        # Verify shot count against expected
         c_meta = meta["circuits_catalog"][label]
         expected_shots = c_meta["shots"]
         if tot != expected_shots:
@@ -194,15 +220,30 @@ def save_and_verify_session_result(
 
         counts_extracted[label] = {"ones": ones, "zeros": zeros, "shots": tot}
 
+    # Retrieve actual hardware usage from job
+    actual_usage = {}
+    try:
+        raw_u = job.usage()
+        if isinstance(raw_u, dict):
+            # ensure all values are primitives
+            actual_usage = {str(k): (v if isinstance(v, (int, float, str, bool)) else str(v)) for k, v in raw_u.items()}
+        elif hasattr(raw_u, "__dict__"):
+            actual_usage = {str(k): str(v) for k, v in raw_u.__dict__.items()}
+        else:
+            actual_usage = {"raw_usage": str(raw_u)}
+    except Exception as e:
+        actual_usage = {"error": str(e)}
+
     record = {
         "session_id": session_id,
         "job_id": meta["job_id"],
         "retrieved_at_utc": datetime.now(timezone.utc).isoformat(),
+        "hardware_usage": actual_usage,
         "counts": counts_extracted
     }
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(record, f, indent=2)
-    print(f"Session {session_id} eredményei ellenőrizve és elmentve: {out_path}")
+    print(f"Session {session_id} eredményei ellenőrizve és elmentve: {out_path} (Hardverhasználat: {actual_usage})")
     return record
 
 def run_dry_run(include_dfast: bool = False, service=None):
@@ -226,12 +267,13 @@ def run_dry_run(include_dfast: bool = False, service=None):
     quota_ok, usage_data, quota_msg = check_live_quota(service, est_total_qpu)
 
     print(f"\n[IBM Live Quota & Instance Audit]")
-    print(f"  • Backend: {backend.name}")
-    print(f"  • Instance ID: {usage_data.get('instance_id', 'N/A')}")
+    print(f"  • Cél Backend: {backend.name}")
+    print(f"  • Előírt Példány: {EXPECTED_INSTANCE}")
+    print(f"  • Aktív Instance ID: {usage_data.get('instance_id', 'N/A')}")
     print(f"  • Státusz: {quota_msg}")
     print(f"  • Felhasznált keret: {usage_data.get('usage_consumed_seconds', 'N/A')} s")
-    print(f"  • Hátralévő keret: {usage_data.get('usage_remaining_seconds', 'N/A')} s")
-    print(f"  • Becsült kampányidő: ~{est_total_qpu:.1f} s")
+    print(f"  • Hátralévő szabad keret: {usage_data.get('usage_remaining_seconds', 'N/A')} s")
+    print(f"  • Becsült kampányidő (16 alkalom): ~{est_total_qpu:.1f} s")
 
     # Configure sampler and print exact runtime options
     sampler = configure_sampler(backend)
@@ -252,12 +294,17 @@ def run_dry_run(include_dfast: bool = False, service=None):
     isa_circuits_dict = build_and_verify_isa_circuits(backend, circ_suite)
     print(f"  • Mind a {len(isa_circuits_dict)} ISA áramkör SHA256 hash-e 100%-ban egyezik a rögzített audittal.")
 
-    print(f"\n[16 Mérési Alkalom PUB Struktúrája]")
+    print(f"\n[16 Mérési Alkalom és Időzítési Szabályok]")
+    timing_rules = manifest.get("timing_separation_rules", {})
+    print(f"  • Tervezett időköz: {timing_rules.get('planned_interval_minutes', 60)} perc")
+    print(f"  • Szigorú minimális időköz (catch-up tiltás): {timing_rules.get('min_actual_interval_minutes', 45)} perc")
+    print(f"  • Lejárati időablak: {timing_rules.get('expiration_window_minutes', 120)} perc")
+
     for s in manifest["sessions"]:
         s_id = s["session_id"]
         pubs = build_session_pubs(s, circ_dict, isa_circuits_dict)
         s_shots = sum(p[2] for p in pubs)
-        print(f"  • Session {s_id:02d}: seed={s['random_seed']}, áramkörök={len(pubs)}, lövések={s_shots} -> PUB OK")
+        print(f"  • Session {s_id:02d}: {s['scheduled_time_utc']} | seed={s['random_seed']} | körök={len(pubs)} | lövések={s_shots} -> PUB OK")
 
     print(f"\n[Jóváhagyási Kapu Állapota]")
     has_env_hash = bool(os.environ.get(ENV_APPROVAL_HASH_KEY))
@@ -294,10 +341,69 @@ def fetch_session_result(session_id: int, service=None):
 
     if st in ["DONE", "JobStatus.DONE"]:
         res = job.result()
-        return save_and_verify_session_result(session_id, res, meta, result_file)
+        return save_and_verify_session_result(session_id, res, job, meta, result_file)
     else:
         print(f"Job még folyamatban van: {st}")
         return None
+
+def reconcile_submission_intent(
+    session_id: int,
+    intent_file: Path,
+    meta_file: Path,
+    service,
+    backend_name: str
+) -> Optional[Dict[str, Any]]:
+    """
+    Recovers from a program crash occurring after sampler.run() but before meta was written.
+    Never submits a duplicate job.
+    """
+    with open(intent_file, encoding="utf-8") as f:
+        intent = json.load(f)
+    intent_dt = datetime.fromisoformat(intent["intent_created_at_utc"])
+    print(f"FIGYELEM: Session {session_id} szándékfájl létezik meta nélkül! Lehetséges megszakadás.")
+    print("Egyeztetés az IBM joblistájával duplicate beküldés elkerülésére...")
+
+    try:
+        # Search recent jobs on backend
+        jobs = service.jobs(limit=10, backend_name=backend_name)
+        candidates = []
+        for j in jobs:
+            created = getattr(j, "creation_date", None)
+            if created:
+                diff_sec = abs((created - intent_dt).total_seconds())
+                if diff_sec < 600:  # within 10 minutes of declared intent
+                    candidates.append((j, diff_sec))
+
+        if len(candidates) == 1:
+            recovered_job, diff = candidates[0]
+            recovered_id = recovered_job.job_id()
+            print(f"Sikeres helyreállítás! Megtalált job ID: {recovered_id} (eltérés: {diff:.1f}s)")
+            meta_record = {
+                "session_id": session_id,
+                "job_id": recovered_id,
+                "submitted_at_utc": intent["intent_created_at_utc"],
+                "backend": backend_name,
+                "session_info": intent["session_info"],
+                "circuits_catalog": intent["circuits_catalog"],
+                "shots": intent["shots"],
+                "status": "RECOVERED_FROM_INTENT"
+            }
+            with open(meta_file, "w", encoding="utf-8") as f:
+                json.dump(meta_record, f, indent=2)
+            intent["status"] = "RECOVERED"
+            with open(intent_file, "w", encoding="utf-8") as f:
+                json.dump(intent, f, indent=2)
+            return meta_record
+        else:
+            raise RuntimeError(
+                f"UNRECONCILED INTENT: Session {session_id} szándékfájl létezik, de {len(candidates)} egyező job található! "
+                f"Duplicate beküldés megakadályozva. Kézi ellenőrzés szükséges."
+            )
+    except Exception as e:
+        raise RuntimeError(
+            f"Kritikus beküldési bizonytalanság: szándékfájl van, de a job egyeztetés sikertelen: {e}. "
+            "A runner leáll, nem indít új jobot."
+        )
 
 def submit_session(
     session_id: int,
@@ -314,29 +420,35 @@ def submit_session(
             "A beküldési kapu zárt (Fail-Closed). Végrehajtás megtagadva."
         )
 
+    intent_file = V3_DATA_DIR / f"session_{session_id:02d}_intent.json"
     meta_file = V3_DATA_DIR / f"session_{session_id:02d}_meta.json"
     result_file = V3_DATA_DIR / f"session_{session_id:02d}_result.json"
-
-    # Idempotence: do not resubmit
-    if meta_file.exists():
-        print(f"Session {session_id} már be van küldve korábban! Lekérdezés indítása...")
-        return fetch_session_result(session_id, service=service)
 
     manifest_file = PREREG_DIR / ("v3_manifest_full.json" if include_dfast else "v3_manifest_core.json")
     with open(manifest_file, encoding="utf-8") as f:
         manifest = json.load(f)
-
-    # Check prerequisites (sequential order and scheduled time)
-    prereq_ok, prereq_msg = check_session_prerequisites(session_id, manifest, enforce_schedule=enforce_schedule)
-    if not prereq_ok:
-        raise RuntimeError(prereq_msg)
 
     if service is None:
         service = get_service()
     if backend is None:
         backend = service.backend(manifest["backend"])
 
-    # Check live quota
+    # Crash Recovery Check: Intent exists without meta
+    if intent_file.exists() and not meta_file.exists():
+        reconciled = reconcile_submission_intent(session_id, intent_file, meta_file, service, backend.name)
+        return reconciled
+
+    # Idempotence: do not resubmit if meta already exists
+    if meta_file.exists():
+        print(f"Session {session_id} már be van küldve korábban! Lekérdezés indítása...")
+        return fetch_session_result(session_id, service=service)
+
+    # Check prerequisites (sequential order, min 45m interval, and scheduled time window)
+    prereq_ok, prereq_msg = check_session_prerequisites(session_id, manifest, enforce_schedule=enforce_schedule)
+    if not prereq_ok:
+        raise RuntimeError(prereq_msg)
+
+    # Check live quota and instance
     session_shots = manifest["sessions"][session_id]["session_shots"]
     est_sec = session_shots * manifest["budget_estimation"]["calibrated_seconds_per_shot"]
     quota_ok, usage_data, quota_msg = check_live_quota(service, est_sec)
@@ -353,16 +465,35 @@ def submit_session(
     pubs = build_session_pubs(session_info, circ_dict, isa_circuits_dict)
 
     sampler = configure_sampler(backend)
+
+    # 1. PERSIST SUBMISSION INTENT BEFORE NETWORK CALL
+    intent_record = {
+        "session_id": session_id,
+        "manifest_sha256": manifest["manifest_sha256"],
+        "intent_created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "backend": backend.name,
+        "instance": EXPECTED_INSTANCE,
+        "session_info": session_info,
+        "circuits_catalog": manifest["circuits_catalog"],
+        "shots": session_shots,
+        "status": "INTENT_DECLARED"
+    }
+    with open(intent_file, "w", encoding="utf-8") as f:
+        json.dump(intent_record, f, indent=2)
+
+    # 2. RUN SAMPLER
     print(f"Job beküldése {backend.name} QPU-ra ({len(pubs)} PUB, {session_shots} lövés)...")
     job = sampler.run(pubs)
     job_id = job.job_id()
     print(f"Sikeres beküldés! Job ID: {job_id}")
 
+    # 3. WRITE META RECORD IMMEDIATELY
     meta_record = {
         "session_id": session_id,
         "job_id": job_id,
         "submitted_at_utc": datetime.now(timezone.utc).isoformat(),
         "backend": backend.name,
+        "instance": EXPECTED_INSTANCE,
         "session_info": session_info,
         "circuits_catalog": manifest["circuits_catalog"],
         "shots": session_shots,
@@ -370,6 +501,11 @@ def submit_session(
     }
     with open(meta_file, "w", encoding="utf-8") as f:
         json.dump(meta_record, f, indent=2)
+
+    intent_record["status"] = "SUBMITTED"
+    with open(intent_file, "w", encoding="utf-8") as f:
+        json.dump(intent_record, f, indent=2)
+
     return meta_record
 
 def analyze_full_campaign(include_dfast: bool = False):
@@ -379,6 +515,8 @@ def analyze_full_campaign(include_dfast: bool = False):
 
     sessions_raw = []
     missing_sessions = []
+    seen_job_ids = set()
+
     for s_idx in range(16):
         res_file = V3_DATA_DIR / f"session_{s_idx:02d}_result.json"
         if not res_file.exists():
@@ -387,10 +525,21 @@ def analyze_full_campaign(include_dfast: bool = False):
         with open(res_file, encoding="utf-8") as f:
             data = json.load(f)
         
-        # Transform counts dict to (arm, prep, t_name) format
+        # Invariant checks: session_id in file matches expected
+        file_session_id = data.get("session_id")
+        if file_session_id != s_idx:
+            raise ValueError(f"Session ID mismatch in {res_file.name}: expected {s_idx}, found {file_session_id}")
+
+        # Invariant checks: strict uniqueness of job IDs
+        job_id = data.get("job_id")
+        if not job_id:
+            raise ValueError(f"Missing job_id in {res_file.name}!")
+        if job_id in seen_job_ids:
+            raise ValueError(f"DUPLICATE JOB ID DETECTED: {job_id} appears in multiple sessions! Duplicate reuse prohibited.")
+        seen_job_ids.add(job_id)
+
         raw_counts = {}
         for lbl, c_entry in data["counts"].items():
-            # label format: D_tau_8ns_G_t0 or D_tau_8ns_E_t2T_mc
             parts = lbl.split("_")
             arm = parts[0]
             prep = parts[3]
@@ -420,13 +569,13 @@ def analyze_full_campaign(include_dfast: bool = False):
 
     print(f"\n[Eredmények Összegzése]")
     print(f"  • Kiértékelhető alkalmak: {camp_res.n_sessions_evaluable} / {camp_res.n_sessions_total}")
+    print(f"  • Egyedi Job Azonosítók Száma: {len(seen_job_ids)} / 16 (100% egyedi)")
     print(f"  • Átlagos L: {camp_res.mean_L:+.4f} ± {camp_res.se_L:.4f}")
     print(f"  • 99%-os CI (df=15): [{camp_res.ci99_lower:+.4f}, {camp_res.ci99_upper:+.4f}]")
     print(f"  • DÖNTÉS: {camp_res.decision_verdict}")
     print(f"  • Magyarázat: {camp_res.decision_explanation}")
     print(f"  • D2 Modellellenőrzési eltérések száma: {camp_res.d2_model_check_summary['num_flagged_deviations']} / 32")
 
-    # Generate JSON and Markdown
     out_json = RESULTS_DIR / "v3_l_measurement_report.json"
     with open(out_json, "w", encoding="utf-8") as f:
         json.dump({
@@ -435,6 +584,7 @@ def analyze_full_campaign(include_dfast: bool = False):
             "ci99": [camp_res.ci99_lower, camp_res.ci99_upper],
             "verdict": camp_res.decision_verdict,
             "explanation": camp_res.decision_explanation,
+            "unique_jobs_count": len(seen_job_ids),
             "d2_summary": camp_res.d2_model_check_summary
         }, f, indent=2)
     print(f"Jelentés elmentve: {out_json}")

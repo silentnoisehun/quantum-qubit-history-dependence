@@ -21,6 +21,8 @@ def generate_frozen_manifest(
     start_utc_iso: str = "2026-11-23T00:00:00Z",
     created_at_utc: str = "2026-11-22T10:00:00Z",
     interval_minutes: int = 60,
+    min_interval_minutes: int = 45,
+    expiration_window_minutes: int = 120,
     include_dfast: bool = False,
     base_seed: int = 20261122
 ) -> Dict[str, Any]:
@@ -57,21 +59,20 @@ def generate_frozen_manifest(
         rng.shuffle(circuit_labels)
 
         scheduled_time = start_dt + timedelta(minutes=s_idx * interval_minutes)
+        latest_allowed_time = scheduled_time + timedelta(minutes=expiration_window_minutes)
         session_shots = sum(circuits_catalog[lbl]["shots"] for lbl in circuit_labels)
         total_shots_campaign += session_shots
 
         sessions.append({
             "session_id": s_idx,
             "scheduled_time_utc": scheduled_time.isoformat(),
+            "latest_allowed_time_utc": latest_allowed_time.isoformat(),
             "random_seed": session_seed,
             "circuit_execution_order": circuit_labels,
             "session_shots": session_shots,
             "session_circuits_count": len(circuit_labels)
         })
 
-    # QPU time budget estimation:
-    # Based on measured 0.545 ms per shot on ibm_marrakesh (Heron r2) from today's 8 blocks
-    # (44,000 shots = 24.0 s QPU time):
     seconds_per_shot = 24.0 / 44000.0  # ~0.0005455 s/shot
     est_qpu_seconds_per_session = sessions[0]["session_shots"] * seconds_per_shot
     est_total_qpu_seconds = total_shots_campaign * seconds_per_shot
@@ -80,6 +81,34 @@ def generate_frozen_manifest(
         "manifest_version": "v3.0.0-frozen",
         "created_at_utc": created_at_utc,
         "backend": "ibm_marrakesh",
+        "expected_instance": "open-instance",
+        "processor_type": "Heron r2",
+        "qubit_primary": 21,
+        "qubit_spectator": 20,
+        "timing_spec": {
+            "dt_seconds": builder.timing.dt,
+            "t_x_seconds": builder.timing.t_x,
+            "t_c_seconds": builder.timing.t_c,
+            "tau_0_seconds": builder.timing.tau_0,
+            "tau_max_seconds": builder.timing.tau_max,
+            "t_decay_seconds": builder.timing.t_decay,
+            "rep_delay_seconds": builder.timing.rep_delay,
+            "n_conditioning_pulses": builder.timing.n_pulses
+        },
+        "execution_options": {
+            "init_qubits": True,
+            "optimization_level": 0,
+            "dynamical_decoupling": False,
+            "twirling": False,
+            "include_dfast": include_dfast
+        },
+        "timing_separation_rules": {
+            "planned_interval_minutes": interval_minutes,
+            "min_actual_interval_minutes": min_interval_minutes,
+            "expiration_window_minutes": expiration_window_minutes,
+            "rapid_catchup_prohibited": True,
+            "rule": "Even if earlier sessions completed late, no session may be submitted until at least min_actual_interval_minutes have elapsed since the previous session."
+        },
         "processor_type": "Heron r2",
         "qubit_primary": 21,
         "qubit_spectator": 20,
