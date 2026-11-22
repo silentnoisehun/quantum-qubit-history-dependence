@@ -84,17 +84,21 @@ Minden mérési alkalom egyetlen zárt blokkból áll:
 
 ---
 
-## 4. Ütemezés és Carry-over Transzparencia
+## 4. Ütemezés és Időbeli Elkülönítés Transzparenciája
 
-1. **16 Elkülönített Mérési Alkalom:**
+1. **16 Elkülönített Mérési Alkalom (10 perces ütemezés):**
    - 16 időben szeparált alkalom, alkalmanként 1 blokk.
-   - Tervezett időköz: $\Delta t = 60\text{ perc}$ (vagy $90\text{ perc}$).
-   - Nem egyetlen gyors beküldési köteg, hanem diszkrét, független QPU jobok.
-   - *Függetlenségi korlát:* Az óránként beküldött jobok nem tekinthetők bizonyítottan független mintáknak; a hardveres időbeli drift (pl. hőmérsékleti fluktuáció, TLS állapotváltozás) autokorrelációt vihet a mérési sorozatba. A protokoll számol ezzel a korláttal (ld. 8. szakasz).
-2. **Blokkon Belüli Véletlen Áramkörsorrend:**
+   - Tervezett időköz: $\Delta t = 10\text{ perc}$ (az első és utolsó tervezett beküldés között $2\text{ óra } 30\text{ perc}$ telik el, melyet az IBM QPU várólistája természetesen megnyújthat).
+   - Szigorú minimális tényleges időköz: $\Delta t_{\min} = 10\text{ perc}$ (késés után is tilos a gyors bepótló beküldés).
+   - Működési lejárati türelmi ablak: $30\text{ perc}$ (nem fizikai követelmény, hanem operatív türelem a sorrend tartásához).
+2. **Episztemikus Korlát és Modellfeltétel:**
+   - **A 10 perces időköz NEM bizonyít fizikai függetlenséget.**
+   - A számított $99\%$-os Student-$t$ konfidenciaintervallum modellfeltételes: az eredmény kifejezetten **erre az adott mérési sorozatra vonatkozik**.
+   - Az eredményből **tilos automatikusan napokon át általános érvényű fizikai állítást vagy globális érvényességet levonni**.
+3. **Blokkon Belüli Véletlen Áramkörsorrend:**
    - Minden alkalomhoz determinisztikus pszeudo-véletlen seed rögzítve (`seed = 20261122 + session_id`).
    - A sorrend átrendezése kiegyensúlyozza a monoton időbeli drift hatását a karok és állapotok között.
-3. **Inicializálás és Carry-over Dokumentáció:**
+4. **Inicializálás és Carry-over Dokumentáció:**
    - Az `init_qubits=True` futtatási opció kéri az IBM Runtime rendszertől az inicializálást minden lövés előtt; a hardveres szintű konkrét implementáció (aktív visszacsatolás vagy passzív termalizáció) az IBM vezérlő firmware zárt része, ezért önmagában nem tekinthető bizonyított aktív-reset mechanizmusnak.
    - A lövések közötti beállított késleltetés $250.0\ \mu\text{s}$ (`rep_delay`), kiegészülve a pre-reset conditioning és padding időtartamával ($80.128\ \mu\text{s}$). Ez összesen $> 330\ \mu\text{s}$ időablak ($> 1.8 \times T_1$).
    - A lehetséges carry-over mértékére nem állítunk konkrét százalékos korlátot dedikált hardveres igazolás hiányában; a véletlenszerű áramkörsorrend célja a szisztematikus áthallás csökkentése.

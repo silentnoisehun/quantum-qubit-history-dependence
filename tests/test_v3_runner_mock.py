@@ -78,11 +78,16 @@ class TestV3RunnerMock(unittest.TestCase):
 
     def get_mock_service(self, remaining_sec=432):
         service = MagicMock()
+        service.active_instance.return_value = "crn:mock:open"
+        service.instances.return_value = [{
+            "crn": "crn:mock:open", "name": "open-instance",
+            "plan": "open", "pricing_type": "free"
+        }]
         service.usage.return_value = {
             "usage_consumed_seconds": 168,
             "usage_remaining_seconds": remaining_sec,
             "usage_limit_reached": False,
-            "instance_id": "mock_instance_open"
+            "instance_id": "crn:mock:open"
         }
         return service
 
@@ -429,13 +434,12 @@ class TestV3RunnerMock(unittest.TestCase):
     def test_12_instance_mismatch_blocks_submission(self):
         mock_service = self.get_mock_service()
         mock_backend = self.get_mock_backend()
-        # Infiltrate a paid/different instance ID
-        mock_service.usage.return_value = {
-            "usage_consumed_seconds": 10,
-            "usage_remaining_seconds": 500,
-            "usage_limit_reached": False,
-            "instance_id": "crn:v1:bluemix:public:quantum-computing:us-east:a/premium_paid_instance_xyz"
-        }
+        # Infiltrate a paid instance
+        mock_service.active_instance.return_value = "crn:premium:paid"
+        mock_service.instances.return_value = [{
+            "crn": "crn:premium:paid", "name": "premium-instance",
+            "plan": "pay_as_you_go", "pricing_type": "paid"
+        }]
 
         with patch("v3_runner.SamplerV2") as mock_sampler_cls:
             mock_sampler = MagicMock()
@@ -449,7 +453,7 @@ class TestV3RunnerMock(unittest.TestCase):
                     service=mock_service,
                     backend=mock_backend
                 )
-            self.assertIn("Instance mismatch", str(ctx.exception))
+            self.assertIn("Instance is NOT free open-instance", str(ctx.exception))
             mock_sampler.run.assert_not_called()
 
     # -------------------------------------------------------------------------
@@ -459,8 +463,8 @@ class TestV3RunnerMock(unittest.TestCase):
         mock_service = self.get_mock_service()
         mock_backend = self.get_mock_backend()
 
-        # Session 0 submitted 10 minutes ago
-        s0_sub_time = datetime.now(timezone.utc) - timedelta(minutes=10)
+        # Session 0 submitted 5 minutes ago (min 10 min required)
+        s0_sub_time = datetime.now(timezone.utc) - timedelta(minutes=5)
         with open(TEST_DATA_DIR / "session_00_meta.json", "w", encoding="utf-8") as f:
             json.dump({
                 "session_id": 0, "job_id": "job_0",

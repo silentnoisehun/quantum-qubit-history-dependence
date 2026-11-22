@@ -78,16 +78,29 @@ def verify_approval_token(token: Optional[str]) -> bool:
     thash = hashlib.sha256(token.strip().encode("utf-8")).hexdigest()
     return thash.lower() == expected_hash.strip().lower()
 
+def check_instance_is_open(service) -> Tuple[bool, str]:
+    try:
+        active_crn = service.active_instance()
+        instances = service.instances()
+        for inst in instances:
+            if inst.get("crn") == active_crn:
+                if inst.get("pricing_type") == "free" and inst.get("plan") == "open":
+                    return True, f"Verified Free Open Instance: '{inst.get('name')}' (pricing_type: {inst.get('pricing_type')})"
+                return False, f"Instance is NOT free open-instance: pricing_type='{inst.get('pricing_type')}', plan='{inst.get('plan')}'"
+        return False, f"Active instance '{active_crn}' not found in service instances."
+    except Exception as e:
+        return False, f"Instance query failed: {e}"
+
 def check_live_quota(service, estimated_seconds_needed: float) -> Tuple[bool, Dict[str, Any], str]:
     try:
+        # First verify that the active instance is explicitly free open-instance
+        inst_ok, inst_msg = check_instance_is_open(service)
+        if not inst_ok:
+            return False, {}, f"Instance verification error: {inst_msg}"
+
         usage = service.usage()
-        inst_id = usage.get("instance_id", "")
         rem_sec = usage.get("usage_remaining_seconds", 0)
         limit_reached = usage.get("usage_limit_reached", False)
-
-        # Instance verification: ensure we are operating on the open instance
-        if EXPECTED_OPEN_CRN_SUBSTR not in inst_id.lower() and "crn" in inst_id.lower():
-            return False, usage, f"Instance mismatch: active instance '{inst_id}' does not appear to be {EXPECTED_INSTANCE}!"
 
         if limit_reached:
             return False, usage, "Usage limit already reached on IBM Quantum account."

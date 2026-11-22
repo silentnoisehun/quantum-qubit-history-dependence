@@ -18,11 +18,11 @@ from typing import Dict, Any, List
 from v3_circuit_builder import CircuitBuilderV3, TimingSpecV3
 
 def generate_frozen_manifest(
-    start_utc_iso: str = "2026-11-23T00:00:00Z",
+    start_utc_iso: str = "2026-11-22T11:00:00Z",
     created_at_utc: str = "2026-11-22T10:00:00Z",
-    interval_minutes: int = 60,
-    min_interval_minutes: int = 45,
-    expiration_window_minutes: int = 120,
+    interval_minutes: int = 10,
+    min_interval_minutes: int = 10,
+    expiration_window_minutes: int = 30,
     include_dfast: bool = False,
     base_seed: int = 20261122
 ) -> Dict[str, Any]:
@@ -109,32 +109,12 @@ def generate_frozen_manifest(
             "rapid_catchup_prohibited": True,
             "rule": "Even if earlier sessions completed late, no session may be submitted until at least min_actual_interval_minutes have elapsed since the previous session."
         },
-        "processor_type": "Heron r2",
-        "qubit_primary": 21,
-        "qubit_spectator": 20,
-        "timing_spec": {
-            "dt_seconds": builder.timing.dt,
-            "t_x_seconds": builder.timing.t_x,
-            "t_c_seconds": builder.timing.t_c,
-            "tau_0_seconds": builder.timing.tau_0,
-            "tau_max_seconds": builder.timing.tau_max,
-            "t_decay_seconds": builder.timing.t_decay,
-            "rep_delay_seconds": builder.timing.rep_delay,
-            "n_conditioning_pulses": builder.timing.n_pulses
-        },
-        "execution_options": {
-            "init_qubits": True,
-            "optimization_level": 0,
-            "dynamical_decoupling": False,
-            "twirling": False,
-            "include_dfast": include_dfast
-        },
         "carry_over_analysis": {
             "init_qubits": "Requested runtime option for initial state reset.",
             "repetition_delay_us": 250.0,
             "pre_reset_conditioning_and_delay_us": 80.128,
             "inter_session_spacing_minutes": interval_minutes,
-            "risk_mitigation": "Within-block circuit randomization balances temporal drift. Hourly separated sessions provide time separation, though inter-session correlation (e.g. diurnal drift) remains an empirical property evaluated in analysis."
+            "risk_mitigation": "Within-block circuit randomization balances temporal drift. 10-minute separated sessions provide time separation, though inter-session correlation remains an empirical property evaluated in analysis."
         },
         "budget_estimation": {
             "total_sessions": 16,
