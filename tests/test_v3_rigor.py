@@ -17,6 +17,7 @@ import math
 import random
 import sys
 import unittest
+import hashlib
 from pathlib import Path
 import numpy as np
 from scipy import stats
@@ -184,13 +185,22 @@ class TestV3Rigor(unittest.TestCase):
     # 7. Submission Gate Rejection without Valid Approval
     # -------------------------------------------------------------------------
     def test_07_submission_gate_fail_closed(self):
+        import os
+        from v3_runner import ENV_APPROVAL_HASH_KEY
+        
+        # When no approval hash is in environment, ALL tokens are rejected
+        os.environ.pop(ENV_APPROVAL_HASH_KEY, None)
         self.assertFalse(verify_approval_token(None))
         self.assertFalse(verify_approval_token(""))
         self.assertFalse(verify_approval_token("arbitrary_string"))
-        self.assertFalse(verify_approval_token("mate_indithatod"))
-        # Only the exact hash matches
-        token_valid = "INSTINCT_MATE_V3_QPU_APPROVAL_20261122"
-        self.assertTrue(verify_approval_token(token_valid))
+        self.assertFalse(verify_approval_token("INSTINCT_MATE_V3_QPU_APPROVAL_20261122"))
+
+        # When an external approval hash is set:
+        test_secret = "TEST_SECRET_EXTERNAL_AUTH_987"
+        os.environ[ENV_APPROVAL_HASH_KEY] = hashlib.sha256(test_secret.encode("utf-8")).hexdigest()
+        self.assertFalse(verify_approval_token("wrong_secret"))
+        self.assertTrue(verify_approval_token(test_secret))
+        os.environ.pop(ENV_APPROVAL_HASH_KEY, None)
 
     # -------------------------------------------------------------------------
     # 8. Simulator Reproducibility
